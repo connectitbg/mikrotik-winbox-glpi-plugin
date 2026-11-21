@@ -15,3 +15,4 @@ Desktop.ini
 *.p12
 *.pfx
 *.key
+/dist/

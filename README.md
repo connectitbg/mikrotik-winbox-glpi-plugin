@@ -4,6 +4,14 @@ GLPI 11 plugin for launching the locally installed Winbox client from a network 
 
 Maintained by [Connect IT](https://connectit.bg).
 
+## Beta status
+
+Version 0.4.6 is a free public beta. There is no subscription, purchase, or formal support service at this stage. Connect IT will monitor the public issue tracker and consider fixes and improvements on a best-effort basis. The beta has been exercised on GLPI 11.0.9; broader compatibility and security review are still in progress. No paid stable release is currently offered. If a commercial stable edition is released later, its terms will be announced separately. The source remains licensed under GPL-3.0-or-later.
+
+## Installation
+
+Download the `glpi-winbox-plugin-0.4.6.zip` asset from the [0.4.6 GitHub release](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/tag/v0.4.6), extract the `winbox` directory into GLPI's `plugins` directory, then install and enable **Winbox - GLPI** from **Setup → Plugins**. Back up the GLPI database before upgrading an existing installation.
+
 ## Support and bug reports
 
 Report bugs with the [Bug report form](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/new?template=bug_report.yml). Do not include router passwords, configuration backups, launch codes, public IPs, or customer data in an issue.

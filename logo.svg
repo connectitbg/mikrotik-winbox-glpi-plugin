@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Winbox - GLPI</title>
+  <desc id="desc">Connect IT router connection icon</desc>
+  <rect width="512" height="512" rx="92" fill="#f3f7f4"/>
+  <path d="M132 171h248a24 24 0 0 1 24 24v122a24 24 0 0 1-24 24H132a24 24 0 0 1-24-24V195a24 24 0 0 1 24-24Z" fill="#fff" stroke="#3c8c43" stroke-width="18"/>
+  <path d="M148 220h216M148 269h216M148 318h216" stroke="#d4e4d5" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="157" cy="195" r="9" fill="#83c441"/>
+  <circle cx="189" cy="195" r="9" fill="#83c441"/>
+  <path d="M255 134V92m0 0-31 31m31-31 31 31M256 377v44m0 0-31-31m31 31 31-31" fill="none" stroke="#253d2a" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M187 246h140M187 294h140" stroke="#315437" stroke-width="14" stroke-linecap="round"/>
+</svg>
