@@ -4,6 +4,11 @@
 
 The public raw XML was submitted through the GLPI plugins catalog form. The site confirmed that the plugin will be verified. Catalog review is pending; the plugin is not yet listed. Marketplace review has not been requested because GLPI requires catalog publication first. After acceptance, Connect IT must email `glpi@teclib.com` to request the separate Marketplace review.
 
+## Pending follow-up
+
+- [x] Email Teclib to ask for the catalog review status and clarify Marketplace eligibility requirements. This is a preliminary inquiry, not a formal Marketplace review request.
+- [ ] After Teclib accepts and publishes the plugin in the public catalog, email `glpi@teclib.com` to request the separate Marketplace review. Include the public source repository, release archive, GLPI compatibility evidence, and maintenance contact.
+
 ## Current beta listing
 
 - Display name: Winbox - GLPI
