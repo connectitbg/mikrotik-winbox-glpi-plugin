@@ -9,24 +9,24 @@
       <en>Open MikroTik routers from GLPI using Winbox and manage router configuration backups.</en>
     </short>
     <long>
-      <en><![CDATA[Adds a Winbox connection tab to GLPI network equipment records. Store per-device connection details, launch the locally installed Winbox client through a short-lived one-time handoff, review launch events, and manage RouterOS configuration exports and backups. Optional PuTTY and KiTTY launch handlers are provided for SSH access.
+      <en><![CDATA[Adds a Winbox connection tab to GLPI network equipment records. Store per-device connection details, launch the locally installed Winbox client through a short-lived one-time handoff, review launch events, and manage RouterOS configuration exports and backups. PuTTY and KiTTY SSH launch handlers are included in the per-user Windows installer.
 
-Version 0.4.6 is a free public beta exercised on GLPI 11.0.9. It has no subscription, purchase, or formal support service. Connect IT monitors the public issue tracker and considers fixes and improvements on a best-effort basis. Compatibility and security review are ongoing.]]></en>
+Version 0.4.7 is a free public beta exercised on GLPI 11.0.9. It has no subscription, purchase, or formal support service. Connect IT monitors the public issue tracker and considers fixes and improvements on a best-effort basis. Compatibility and security review are ongoing.]]></en>
     </long>
   </description>
   <homepage>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin</homepage>
   <download>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases</download>
   <issues>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues</issues>
   <readme>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/blob/main/README.md</readme>
-  <changelog>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/blob/main/docs/RELEASE_NOTES_0.4.6.md</changelog>
+  <changelog>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/blob/main/docs/RELEASE_NOTES_0.4.7.md</changelog>
   <authors>
     <author>Connect IT</author>
   </authors>
   <versions>
     <version>
-      <num>0.4.6</num>
+      <num>0.4.7</num>
       <compatibility>~11.0.0</compatibility>
-      <download_url>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v0.4.6/glpi-winbox-plugin-0.4.6.zip</download_url>
+      <download_url>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v0.4.7/glpi-winbox-plugin-0.4.7.zip</download_url>
     </version>
   </versions>
   <langs>

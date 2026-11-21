@@ -65,7 +65,7 @@ final class SshLaunchController extends AbstractController
         echo '<div class="container-fluid"><div class="card m-3"><div class="card-body text-center"><h2>'
             . $escape(__('Open SSH session')) . ' — ' . $escape($client_name) . '</h2><p>'
             . $escape($equipment->fields['name']) . ' — ' . $escape($target) . '</p><p>'
-            . $escape(__('The one-time code expires in 90 seconds. GLPI supplies the saved password to the SSH client for this launch. PuTTY 0.83 or newer uses a temporary password file; KiTTY uses its password option. The first connection may ask you to confirm the router host key.'))
+            . $escape(__('The one-time code expires in 90 seconds. GLPI supplies the saved password to the SSH client for this launch. PuTTY 0.83 or newer uses a temporary password file; KiTTY uses its password option, which may be visible to other local processes. The first connection may ask you to confirm the router host key.'))
             . '</p><a class="btn btn-primary btn-lg" href="' . $escape($uri) . '">'
             . $escape(sprintf(__('Start %s'), $client_name)) . '</a></div></div></div>';
         echo '<p class="text-center"><a href="' . $escape($root . '/front/networkequipment.form.php?id=' . $id . '&forcetab=GlpiPlugin%5CWinbox%5CWinboxTab%241') . '">'

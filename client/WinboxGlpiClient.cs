@@ -95,13 +95,19 @@ internal static class Program
         RegisterProtocol("mikrotik-kitty", "URL:MikroTik SSH via KiTTY Protocol", installedExe);
         WriteLog("Installer completed; per-user Winbox, PuTTY SSH, and KiTTY SSH protocol handlers are registered.");
 
+        string puttyPath = FindSshClient("putty");
+        string kittyPath = FindSshClient("kitty");
+        WriteLog("SSH client discovery after setup: PuTTY=" + (puttyPath == null ? "not found" : "found")
+            + "; KiTTY=" + (kittyPath == null ? "not found" : "found") + ".");
+
         string httpWarning = baseUri.Scheme == Uri.UriSchemeHttp
             ? "\n\nThe test GLPI server uses HTTP. Use test credentials only."
             : String.Empty;
         MessageBox.Show(
             "Setup is complete for the current Windows user.\n\n"
             + "Open a network equipment record in GLPI and choose Open in Winbox, Open SSH in PuTTY, or Open SSH in KiTTY.\n"
-            + "Install PuTTY or KiTTY separately if you want to use those SSH buttons.\n"
+            + "PuTTY: " + (puttyPath == null ? "not detected; install it from the setup page." : "detected.") + "\n"
+            + "KiTTY: " + (kittyPath == null ? "not detected; install it from the setup page." : "detected.") + "\n"
             + "The log is saved to:\n" + Path.Combine(installDirectory, "winbox-glpi-launch.log")
             + httpWarning,
             ProductName,
@@ -161,11 +167,28 @@ internal static class Program
         string client = match.Groups[1].Value.ToLowerInvariant();
         if (String.IsNullOrEmpty(client)) client = "winbox";
         string token = match.Groups[2].Value.ToLowerInvariant();
+        string sshExecutable = null;
+        if (client != "winbox")
+        {
+            sshExecutable = FindSshClient(client);
+            if (String.IsNullOrEmpty(sshExecutable))
+            {
+                string clientName = client == "putty" ? "PuTTY" : "KiTTY";
+                WriteLog(clientName + ".exe was not found; the launch code was not redeemed.");
+                throw new FileNotFoundException(
+                    clientName + ".exe was not found. Install it using the link on the Winbox - GLPI setup page, then try again."
+                );
+            }
+            WriteLog(client + " executable found.");
+        }
+
         Dictionary<string, object> connection = null;
+        bool launchCodeRedeemed = false;
         try
         {
             WriteLog("Protocol handler started for " + client + "; launch code format is valid.");
             connection = RedeemLaunchCode(token, client);
+            launchCodeRedeemed = true;
             WriteLog("GLPI connection exchange succeeded for " + client + ".");
 
             if (client == "winbox")
@@ -174,7 +197,7 @@ internal static class Program
             }
             else
             {
-                StartSshClient(connection, client);
+                StartSshClient(connection, client, sshExecutable);
             }
 
             WriteLog(client + " process start returned successfully.");
@@ -182,7 +205,7 @@ internal static class Program
         }
         catch
         {
-            ReportLaunchResult(token, "failed", client);
+            if (launchCodeRedeemed) ReportLaunchResult(token, "failed", client);
             throw;
         }
         finally
@@ -229,7 +252,7 @@ internal static class Program
         password = null;
     }
 
-    private static void StartSshClient(Dictionary<string, object> connection, string client)
+    private static void StartSshClient(Dictionary<string, object> connection, string client, string executable)
     {
         string host = GetString(connection, "host");
         string port = GetString(connection, "port");
@@ -240,13 +263,6 @@ internal static class Program
             || !Int32.TryParse(port, out parsedPort) || parsedPort < 1 || parsedPort > 65535)
         {
             throw new InvalidOperationException("GLPI returned incomplete SSH connection details.");
-        }
-
-        string executable = FindSshClient(client);
-        if (String.IsNullOrEmpty(executable))
-        {
-            string clientName = client == "putty" ? "PuTTY" : "KiTTY";
-            throw new FileNotFoundException(clientName + ".exe was not found. Install it or place it in C:\\Tools.");
         }
 
         ProcessStartInfo startInfo = new ProcessStartInfo();
@@ -518,11 +534,23 @@ internal static class Program
         bool isKitty = client == "kitty";
         string executableName = isKitty ? "kitty.exe" : "putty.exe";
         string folderName = isKitty ? "KiTTY" : "PuTTY";
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         List<string> candidates = new List<string>();
+        string overrideDirectory = Environment.GetEnvironmentVariable("WINBOX_GLPI_CLIENT_DIR");
+        if (!String.IsNullOrWhiteSpace(overrideDirectory))
+        {
+            candidates.Add(Path.Combine(overrideDirectory.Trim().Trim('"'), executableName));
+        }
         candidates.Add(Path.Combine(@"C:\Tools", executableName));
         candidates.Add(Path.Combine(@"C:\Tools", folderName, executableName));
         candidates.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), folderName, executableName));
         candidates.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), folderName, executableName));
+        if (!String.IsNullOrEmpty(localAppData))
+        {
+            candidates.Add(Path.Combine(localAppData, "Programs", folderName, executableName));
+            candidates.Add(Path.Combine(localAppData, folderName, executableName));
+            candidates.Add(Path.Combine(localAppData, InstallFolderName, "clients", executableName));
+        }
 
         foreach (string candidate in candidates)
         {
@@ -557,6 +585,21 @@ internal static class Program
                 {
                     // Continue checking other Windows App Paths entries.
                 }
+            }
+        }
+
+        string pathValue = Environment.GetEnvironmentVariable("PATH") ?? String.Empty;
+        foreach (string directory in pathValue.Split(Path.PathSeparator))
+        {
+            if (String.IsNullOrWhiteSpace(directory)) continue;
+            try
+            {
+                string candidate = Path.Combine(directory.Trim().Trim('"'), executableName);
+                if (File.Exists(candidate)) return candidate;
+            }
+            catch
+            {
+                // Ignore malformed PATH entries and continue searching.
             }
         }
 

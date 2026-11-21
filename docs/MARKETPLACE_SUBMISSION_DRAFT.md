@@ -14,12 +14,12 @@ The public raw XML was submitted through the GLPI plugins catalog form. The site
 - Display name: Winbox - GLPI
 - Technical key: `winbox`
 - Publisher: Connect IT
-- Version: 0.4.6
+- Version: 0.4.7
 - Catalog state: beta
 - GLPI compatibility exercised: GLPI 11.0.9; declared range: GLPI 11.x
 - Source: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin>
 - License: GPL-3.0-or-later
-- Release archive: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v0.4.6/glpi-winbox-plugin-0.4.6.zip>
+- Release archive: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v0.4.7/glpi-winbox-plugin-0.4.7.zip>
 - Contact and issue reports: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues>
 - Beta terms: free, no subscription, and no formal support service. Connect IT monitors the issue tracker and considers fixes on a best-effort basis.
 
@@ -31,7 +31,7 @@ Open MikroTik routers from GLPI using Winbox and manage router configuration bac
 
 Winbox - GLPI adds a Winbox connection tab to GLPI network equipment records. Store per-device connection details, launch the locally installed Winbox client through a short-lived one-time handoff, review launch events, and manage RouterOS configuration exports and backups. Optional PuTTY and KiTTY launch handlers are provided for SSH access.
 
-Version 0.4.6 is a free public beta exercised on GLPI 11.0.9. It has no subscription, purchase, or formal support service. Connect IT monitors the public issue tracker and considers fixes and improvements on a best-effort basis. Compatibility and security review are ongoing.
+Version 0.4.7 is a free public beta exercised on GLPI 11.0.9. It has no subscription, purchase, or formal support service. Connect IT monitors the public issue tracker and considers fixes and improvements on a best-effort basis. Compatibility and security review are ongoing.
 
 ## Publication sequence
 

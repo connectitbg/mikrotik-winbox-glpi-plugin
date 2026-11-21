@@ -6,11 +6,11 @@ Maintained by [Connect IT](https://connectit.bg).
 
 ## Beta status
 
-Version 0.4.6 is a free public beta. There is no subscription, purchase, or formal support service at this stage. Connect IT will monitor the public issue tracker and consider fixes and improvements on a best-effort basis. The beta has been exercised on GLPI 11.0.9; broader compatibility and security review are still in progress. No paid stable release is currently offered. If a commercial stable edition is released later, its terms will be announced separately. The source remains licensed under GPL-3.0-or-later.
+Version 0.4.7 is a free public beta. There is no subscription, purchase, or formal support service at this stage. Connect IT will monitor the public issue tracker and consider fixes and improvements on a best-effort basis. The beta has been exercised on GLPI 11.0.9; broader compatibility and security review are still in progress. No paid stable release is currently offered. If a commercial stable edition is released later, its terms will be announced separately. The source remains licensed under GPL-3.0-or-later.
 
 ## Installation
 
-Download the `glpi-winbox-plugin-0.4.6.zip` asset from the [0.4.6 GitHub release](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/tag/v0.4.6), extract the `winbox` directory into GLPI's `plugins` directory, then install and enable **Winbox - GLPI** from **Setup → Plugins**. Back up the GLPI database before upgrading an existing installation.
+Download the `glpi-winbox-plugin-0.4.7.zip` asset from the [0.4.7 GitHub release](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/tag/v0.4.7), extract the `winbox` directory into GLPI's `plugins` directory, then install and enable **Winbox - GLPI** from **Setup → Plugins**. Back up the GLPI database before upgrading an existing installation.
 
 ## Support and bug reports
 
@@ -18,12 +18,12 @@ Report bugs with the [Bug report form](https://github.com/connectitbg/mikrotik-w
 
 ## Windows client setup
 
-1. Install `Winbox.exe` on the client computer. Install PuTTY or KiTTY separately if you want to use the SSH buttons.
+1. Install the applications you plan to use. Winbox is required for Winbox access; PuTTY or KiTTY is required for its matching SSH button. Use the official links on the GLPI setup page for PuTTY and KiTTY.
 2. Open `/plugins/winbox/InstallClient` on the GLPI server and download `Winbox-GLPI-Setup.exe`.
-3. Double-click the executable. It copies itself to `%LOCALAPPDATA%\Winbox-GLPI`, registers the `mikrotik://`, `mikrotik-putty://`, and `mikrotik-kitty://` handlers for the signed-in user, verifies each effective Windows handler, and writes a diagnostic log. Administrator rights and PowerShell commands are not required.
+3. Double-click the executable. It copies itself to `%LOCALAPPDATA%\Winbox-GLPI`, registers the `mikrotik://`, `mikrotik-putty://`, and `mikrotik-kitty://` handlers for the signed-in user, verifies each effective Windows handler, checks whether PuTTY/KiTTY are detected, and writes a diagnostic log. Administrator rights and PowerShell commands are not required.
    Users who installed an earlier release should run the updated installer again once to register the PuTTY/KiTTY handlers.
 4. In GLPI, open a network equipment record, select **Winbox**, press **Open in Winbox**, then press **Start Winbox** on the handoff page within 90 seconds. Chrome may ask once before opening the external application.
-5. For SSH, press **Open SSH in PuTTY** or **Open SSH in KiTTY**, then the matching start button on the handoff page. The client uses the saved host, SSH port, username, and password. PuTTY 0.83 or newer reads the password from a short-lived per-user file; older PuTTY versions prompt. KiTTY receives the password through its `-pass` command-line option, which can be visible to other local processes. The one-time browser code contains no router password, and the launch log never records it.
+5. For SSH, press **Open SSH in PuTTY** or **Open SSH in KiTTY**, then the matching start button on the handoff page. The client uses the saved host, SSH port, username, and password. The handler checks for the selected client before redeeming the one-time code. PuTTY 0.83 or newer reads the password from a short-lived per-user file; older PuTTY versions prompt. KiTTY receives the password through its `-pass` command-line option, which can be visible to other local processes. The one-time browser code contains no router password, and the launch log never records it.
 
 The client EXE is configured dynamically with the GLPI base URL when downloaded, so the same plugin package can serve it from each GLPI installation. The page keeps the old `.reg` and PowerShell files under a manual fallback section.
 

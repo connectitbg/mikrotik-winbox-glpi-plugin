@@ -9,6 +9,9 @@ $launchLog = Join-Path $PSScriptRoot 'winbox-glpi-launch.log'
 $token = $null
 $client = 'winbox'
 $passwordFile = $null
+$credentialExchangeSucceeded = $false
+$sshClient = $null
+$clientName = $null
 
 function Write-LaunchLog([string]$Message) {
     try {
@@ -56,6 +59,37 @@ function ConvertTo-WindowsCommandLineArgument([string]$Value) {
     return $builder.ToString()
 }
 
+function Find-SshClient([string]$SelectedClient) {
+    $executableName = if ($SelectedClient -eq 'putty') { 'putty.exe' } else { 'kitty.exe' }
+    $folderName = if ($SelectedClient -eq 'putty') { 'PuTTY' } else { 'KiTTY' }
+    $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "Winbox-GLPI\clients\$executableName"),
+        "C:\Tools\$executableName",
+        "C:\Tools\$folderName\$executableName",
+        (Join-Path $env:ProgramFiles "$folderName\$executableName"),
+        (Join-Path ${env:ProgramFiles(x86)} "$folderName\$executableName"),
+        (Join-Path $env:LOCALAPPDATA "Programs\$folderName\$executableName"),
+        (Join-Path $env:LOCALAPPDATA "$folderName\$executableName")
+    )
+    $found = $candidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+    if ($found) { return $found }
+
+    foreach ($root in @('HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths', 'HKLM:\Software\Microsoft\Windows\CurrentVersion\App Paths', 'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths')) {
+        $key = Join-Path $root $executableName
+        if (Test-Path -LiteralPath $key) {
+            $candidate = [Environment]::ExpandEnvironmentVariables([string](Get-Item -LiteralPath $key).GetValue(''))
+            if (Test-Path -LiteralPath $candidate) { return $candidate }
+        }
+    }
+
+    foreach ($directory in ([string]$env:PATH).Split([System.IO.Path]::PathSeparator)) {
+        if ([string]::IsNullOrWhiteSpace($directory)) { continue }
+        $candidate = Join-Path $directory.Trim().Trim('"') $executableName
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
+    }
+    return $null
+}
+
 try {
     Write-LaunchLog ('Handler started; URI argument present: ' + (-not [string]::IsNullOrWhiteSpace($ProtocolUri)))
     $uri = ([string]$ProtocolUri).Trim().Trim('"').Trim("'")
@@ -75,6 +109,15 @@ try {
         throw 'Invalid launch code. Return to GLPI and try again.'
     }
     if ($token -notmatch '^[a-f0-9]{64}$') { throw 'Invalid launch code. Return to GLPI and try again.' }
+    if ($client -ne 'winbox') {
+        $clientName = if ($client -eq 'putty') { 'PuTTY' } else { 'KiTTY' }
+        $sshClient = Find-SshClient $client
+        if (-not $sshClient) {
+            Write-LaunchLog ($clientName + '.exe was not found; the launch code was not redeemed.')
+            throw "$clientName.exe was not found. Install it using the link on the Winbox - GLPI setup page, then try again."
+        }
+        Write-LaunchLog ($clientName + ' executable found.')
+    }
     Write-LaunchLog ('Launch code format valid for ' + $client + '; requesting connection details from GLPI.')
 
     $bodyData = @{token = $token}
@@ -84,24 +127,11 @@ try {
         $redeemUri = $sshRedeemEndpoint
     }
     $connection = Invoke-RestMethod -Method Post -Uri $redeemUri -ContentType 'application/json' -Body ($bodyData | ConvertTo-Json -Compress) -TimeoutSec 15
+    $credentialExchangeSucceeded = $true
     Write-LaunchLog ('GLPI connection exchange succeeded for ' + $client + '.')
 
     if ($client -ne 'winbox') {
-        $clientName = if ($client -eq 'putty') { 'PuTTY' } else { 'KiTTY' }
         $executableName = if ($client -eq 'putty') { 'putty.exe' } else { 'kitty.exe' }
-        $folderName = if ($client -eq 'putty') { 'PuTTY' } else { 'KiTTY' }
-        $candidates = @("C:\Tools\$executableName", "C:\Tools\$folderName\$executableName", (Join-Path $env:ProgramFiles "$folderName\$executableName"), (Join-Path ${env:ProgramFiles(x86)} "$folderName\$executableName"))
-        $sshClient = $candidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
-        if (-not $sshClient) {
-            foreach ($root in @('HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths', 'HKLM:\Software\Microsoft\Windows\CurrentVersion\App Paths', 'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths')) {
-                $key = Join-Path $root $executableName
-                if (Test-Path -LiteralPath $key) {
-                    $candidate = [Environment]::ExpandEnvironmentVariables((Get-Item -LiteralPath $key).GetValue(''))
-                    if (Test-Path -LiteralPath $candidate) { $sshClient = $candidate; break }
-                }
-            }
-        }
-        if (-not $sshClient) { throw "$clientName.exe was not found. Install it or place it in C:\Tools." }
         $sshArgumentValues = @('-ssh', '-P', [string]$connection.port, '-l', [string]$connection.username)
         $savedPassword = [string]$connection.password
         if ($savedPassword) {
@@ -180,7 +210,7 @@ try {
     $body = $null
 } catch {
     if ($passwordFile) { Remove-Item -LiteralPath $passwordFile -Force -ErrorAction SilentlyContinue }
-    if ($token -match '^[a-f0-9]{64}$') {
+    if ($credentialExchangeSucceeded -and $token -match '^[a-f0-9]{64}$') {
         Send-LaunchReport $token 'failed' $client
     }
     $safeMessage = [string]$_.Exception.Message -replace 'mikrotik://[a-f0-9]{64}', 'mikrotik://[REDACTED]'

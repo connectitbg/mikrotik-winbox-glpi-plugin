@@ -20,7 +20,7 @@ function plugin_version_winbox(): array
 {
     return [
         'name' => 'Winbox - GLPI',
-        'version' => '0.4.6',
+        'version' => '0.4.7',
         'author' => '<a href="https://connectit.bg">Connect IT</a>',
         'homepage' => 'https://connectit.bg',
         'license' => 'GPL-3.0-or-later',

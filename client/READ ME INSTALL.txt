@@ -1,9 +1,9 @@
 Winbox - GLPI — Client setup
 
-1. Make sure Winbox.exe is installed. Install PuTTY or KiTTY separately if you want to use the SSH buttons.
+1. Install the applications you plan to use. Winbox is required for Winbox access; PuTTY or KiTTY is required for its matching SSH button. Official SSH client links are on the GLPI setup page.
 2. Download Winbox-GLPI-Setup.exe from the GLPI setup page.
-3. Double-click the EXE and wait for the success message.
-4. If an earlier installer version was installed, run this updated EXE again to register the PuTTY/KiTTY handlers.
+3. Double-click the EXE and wait for the success message. It reports whether PuTTY and KiTTY were detected.
+4. If an earlier installer version was installed, run this updated EXE again to repair/register all handlers.
 
 The installer places Winbox - GLPI in %LOCALAPPDATA%\Winbox-GLPI and registers mikrotik://, mikrotik-putty://, and mikrotik-kitty:// for the signed-in user. PowerShell commands, a separate .reg file, and administrator rights are not required.
 
@@ -16,18 +16,19 @@ CONNECT
 SSH WITH PuTTY OR KiTTY
 1. In the same device's Winbox tab, click Open SSH in PuTTY or Open SSH in KiTTY.
 2. On the handoff page, click Start PuTTY or Start KiTTY within 90 seconds.
-3. Chrome may ask once to open the external application. The SSH window opens with the configured host, SSH port, username, and saved password. PuTTY 0.83 or newer is required for automatic password entry; older PuTTY versions will prompt. KiTTY receives its password through its command-line option.
+3. Chrome may ask once to open the external application. The SSH window opens with the configured host, SSH port, username, and saved password. PuTTY 0.83 or newer is required for automatic password entry; older PuTTY versions will prompt. KiTTY receives its password through its command-line option, which can be visible to other local processes.
 
 LOG AND TROUBLESHOOTING
 - Log: %LOCALAPPDATA%\Winbox-GLPI\winbox-glpi-launch.log
-- If Windows does not open Winbox, run the EXE installer again and read its message.
+- If Windows does not open a client, run the EXE installer again and read its message.
+- If the log says putty.exe or kitty.exe was not found, install that client and click the start button again. The one-time launch code is not redeemed before the client is found.
 - If the log contains an error, send it to the GLPI administrator. It does not contain the password or one-time launch code.
 - Make sure the selected application is installed. The launcher checks C:\Tools, Program Files, and Windows App Paths.
 
 GLPI ACCESS LOG
 In GLPI, open Administration → Logs → Log files → mikrotik_access.log. Entries identify the GLPI user, device, target, time, and whether the Winbox process started. RouterOS authentication itself is not verified.
 
-The test GLPI server uses HTTP. Use test credentials only. KiTTY's password command-line option may be visible to other local processes. The test installer is unsigned and intended for this server.
+The test GLPI server uses HTTP. Use test credentials only. The test installer is unsigned and intended for this server.
 
 MANUAL FALLBACK
 If needed, use WINBOX-GLPI.reg and launch_winbox.ps1 from the GLPI setup page. Do not use the old numbered 2. WINBOX.reg.
