@@ -1,0 +1,26 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Classes\mikrotik]
+@="URL:MikroTik Winbox Protocol"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\mikrotik\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\mikrotik\shell\open]
+
+[HKEY_CURRENT_USER\Software\Classes\mikrotik\shell\open\command]
+@="powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File \"C:\\Tools\\launch_winbox.ps1\" \"%1\""
+
+[HKEY_CURRENT_USER\Software\Classes\mikrotik-putty]
+@="URL:MikroTik SSH via PuTTY Protocol"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\mikrotik-putty\shell\open\command]
+@="powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File \"C:\\Tools\\launch_winbox.ps1\" \"%1\""
+
+[HKEY_CURRENT_USER\Software\Classes\mikrotik-kitty]
+@="URL:MikroTik SSH via KiTTY Protocol"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\mikrotik-kitty\shell\open\command]
+@="powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File \"C:\\Tools\\launch_winbox.ps1\" \"%1\""

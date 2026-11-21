@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a reproducible problem with Winbox - GLPI.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include passwords, router backups/configuration exports, launch codes, public IPs, or customer data.
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      placeholder: 0.4.6
+    validations:
+      required: true
+  - type: input
+    id: glpi-version
+    attributes:
+      label: GLPI version
+      placeholder: 11.0.9
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide a minimal sequence that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized error/log excerpt
+    validations:
+      required: true
