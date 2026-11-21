@@ -1,5 +1,9 @@
 # GLPI catalog and Marketplace submission
 
+## Submission status — 2026-11-21
+
+The public raw XML was submitted through the GLPI plugins catalog form. The site confirmed that the plugin will be verified. Catalog review is pending; the plugin is not yet listed. Marketplace review has not been requested because GLPI requires catalog publication first. After acceptance, Connect IT must email `glpi@teclib.com` to request the separate Marketplace review.
+
 ## Current beta listing
 
 - Display name: Winbox - GLPI
