@@ -22,6 +22,7 @@ Version 0.4.6 is a free public beta exercised on GLPI 11.0.9. It has no subscrip
   <download>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases</download>
   <issues>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues</issues>
   <readme>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/blob/main/README.md</readme>
+  <changelog>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/blob/main/docs/RELEASE_NOTES_0.4.6.md</changelog>
   <authors>
     <author>Connect IT</author>
   </authors>
