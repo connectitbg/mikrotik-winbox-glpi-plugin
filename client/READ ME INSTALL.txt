@@ -10,7 +10,7 @@ The installer places Winbox - GLPI in %LOCALAPPDATA%\Winbox-GLPI and registers m
 CONNECT
 1. In GLPI, open the network equipment record and select the Winbox tab.
 2. Click Open in Winbox.
-3. On the handoff page, click Стартирай Winbox within 90 seconds.
+3. On the handoff page, click Start Winbox within 90 seconds.
 4. The first time, confirm Chrome's prompt to open the external application.
 
 SSH WITH PuTTY OR KiTTY

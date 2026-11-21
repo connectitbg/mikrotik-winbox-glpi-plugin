@@ -7,15 +7,11 @@
   <description>
     <short>
       <en>Open MikroTik routers from GLPI using Winbox and manage router configuration backups.</en>
-      <bg>Отваря MikroTik рутери от GLPI с Winbox и управлява архиви на конфигурацията.</bg>
     </short>
     <long>
       <en><![CDATA[Adds a Winbox connection tab to GLPI network equipment records. Store per-device connection details, launch the locally installed Winbox client through a short-lived one-time handoff, review launch events, and manage RouterOS configuration exports and backups. Optional PuTTY and KiTTY launch handlers are provided for SSH access.
 
 Version 0.4.6 is a free public beta exercised on GLPI 11.0.9. It has no subscription, purchase, or formal support service. Connect IT monitors the public issue tracker and considers fixes and improvements on a best-effort basis. Compatibility and security review are ongoing.]]></en>
-      <bg><![CDATA[Добавя таб за Winbox връзка към мрежовите устройства в GLPI. Запазва данните за връзка за всяко устройство, стартира локално инсталирания Winbox чрез краткотрайно еднократно предаване, показва събитията от стартиране и управлява експортиране и архивиране на RouterOS конфигурации. Включени са и опционални обработчици за стартиране на PuTTY и KiTTY по SSH.
-
-Версия 0.4.6 е безплатна публична бета версия, изпробвана с GLPI 11.0.9. Няма абонамент, покупка или формална услуга за поддръжка. Connect IT следи публичния регистър за проблеми и разглежда корекции и подобрения при възможност. Проверката на съвместимостта и сигурността продължава.]]></bg>
     </long>
   </description>
   <homepage>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin</homepage>
@@ -35,7 +31,6 @@ Version 0.4.6 is a free public beta exercised on GLPI 11.0.9. It has no subscrip
   </versions>
   <langs>
     <lang>en_GB</lang>
-    <lang>bg_BG</lang>
   </langs>
   <license>GPL v3+</license>
   <tags>
@@ -45,12 +40,6 @@ Version 0.4.6 is a free public beta exercised on GLPI 11.0.9. It has no subscrip
       <tag>Winbox</tag>
       <tag>Backup</tag>
     </en>
-    <bg>
-      <tag>Мрежа</tag>
-      <tag>MikroTik</tag>
-      <tag>Winbox</tag>
-      <tag>Архивиране</tag>
-    </bg>
   </tags>
   <screenshots/>
 </root>
