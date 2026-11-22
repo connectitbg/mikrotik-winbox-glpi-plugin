@@ -20,7 +20,7 @@ final class RouterOsSshClient
     public function __construct(array $credentials)
     {
         $this->credentials = $credentials;
-        $this->host = trim((string)($credentials['ip_address'] ?? ''));
+        $this->host = Access::sshHost($credentials);
         $this->port = (int)($credentials['ssh_port'] ?? 22);
         $this->username = (string)($credentials['username'] ?? '');
         $this->password = (string)($credentials['password'] ?? '');
@@ -82,6 +82,107 @@ final class RouterOsSshClient
         return array_values($keys);
     }
 
+    /** Read the logged-in user's effective RouterOS group policies without changing router state. */
+    public function inspectUserPolicies(): array
+    {
+        $unknown = array_fill_keys(['ssh', 'read', 'sensitive', 'ftp', 'write'], 'unknown');
+        $runtime = null;
+        try {
+            $runtime = $this->createRuntimeContext();
+            $active = self::runProcess(
+                $this->sshCommand($runtime['known_hosts'], '/user active print detail'),
+                $runtime['environment'],
+                '',
+                20
+            );
+            if ($active['exit_code'] !== 0) {
+                return [
+                    'statuses' => $unknown,
+                    'ssh_login' => 'unknown',
+                    'message' => 'The SSH session could not read active-user details; policy state cannot be confirmed safely.',
+                ];
+            }
+
+            $statuses = $unknown;
+            $active_group = '';
+            foreach (preg_split('/\r?\n/', $active['stdout']) ?: [] as $line) {
+                $properties = self::routerOsProperties($line);
+                if (($properties['name'] ?? '') === $this->username) {
+                    // This is an authenticated read-only SSH command and the
+                    // active-user row confirms RouterOS can read the session.
+                    $statuses['ssh'] = 'active';
+                    $statuses['read'] = 'active';
+                    $active_group = (string)($properties['group'] ?? '');
+                    break;
+                }
+            }
+            if ($statuses['ssh'] !== 'active') {
+                return [
+                    'statuses' => $unknown,
+                    'ssh_login' => 'unknown',
+                    'message' => 'SSH connected, but RouterOS did not return the current active-user row; account policies cannot be confirmed safely.',
+                ];
+            }
+            if ($active_group === '') {
+                return [
+                    'statuses' => $statuses,
+                    'ssh_login' => 'success',
+                    'message' => 'SSH and read checks passed, but RouterOS did not identify this session group; remaining policy flags are unknown.',
+                ];
+            }
+
+            $groups = self::runProcess(
+                $this->sshCommand($runtime['known_hosts'], '/user group print detail'),
+                $runtime['environment'],
+                '',
+                20
+            );
+            if ($groups['exit_code'] !== 0) {
+                return [
+                    'statuses' => $statuses,
+                    'ssh_login' => 'success',
+                    'message' => 'SSH and read checks passed, but RouterOS did not allow a read-only policy listing; remaining policy flags are unknown.',
+                ];
+            }
+
+            foreach (preg_split('/\r?\n/', $groups['stdout']) ?: [] as $line) {
+                $properties = self::routerOsProperties($line);
+                if (($properties['name'] ?? '') !== $active_group || !isset($properties['policy'])) {
+                    continue;
+                }
+                $policies = array_map('trim', explode(',', (string)$properties['policy']));
+                foreach (['ssh', 'read', 'sensitive', 'ftp', 'write'] as $policy) {
+                    if (in_array($policy, $policies, true)) {
+                        $statuses[$policy] = 'active';
+                    } elseif (in_array('!' . $policy, $policies, true)) {
+                        $statuses[$policy] = 'inactive';
+                    }
+                }
+                return [
+                    'statuses' => $statuses,
+                    'ssh_login' => 'success',
+                    'message' => 'Policy flags were read from the active RouterOS user group. No policy was changed.',
+                ];
+            }
+
+            return [
+                'statuses' => $statuses,
+                'ssh_login' => 'success',
+                'message' => 'SSH and read checks passed, but the active group policy was not returned; remaining policy flags are unknown.',
+            ];
+        } catch (RuntimeException $exception) {
+            return [
+                'statuses' => $unknown,
+                'ssh_login' => 'unknown',
+                'message' => self::safePolicyFailureMessage($exception->getMessage()),
+            ];
+        } finally {
+            if (is_array($runtime)) {
+                self::removeRuntimeContext($runtime);
+            }
+        }
+    }
+
     /** Export all RouterOS text configuration including sensitive values. */
     public function exportSensitiveConfiguration(): string
     {
@@ -101,6 +202,84 @@ final class RouterOsSshClient
             }
 
             return rtrim($configuration) . "\n";
+        } finally {
+            self::removeRuntimeContext($runtime);
+        }
+    }
+
+    /**
+     * Check the trusted SSH endpoint and SFTP write path using a random,
+     * non-executable temporary file. This never imports RouterOS commands.
+     */
+    public function diagnoseSensitiveRestoreUpload(): array
+    {
+        foreach (['/usr/bin/ssh', '/usr/bin/sftp', '/usr/bin/ssh-keyscan'] as $binary) {
+            if (!is_executable($binary)) {
+                throw new RuntimeException('The GLPI server is missing a required OpenSSH program: ' . basename($binary) . '.');
+            }
+        }
+
+        $runtime = $this->createRuntimeContext();
+        $file_name = 'winbox-glpi-sftp-check-' . bin2hex(random_bytes(8)) . '.tmp';
+        $local_file = $runtime['directory'] . DIRECTORY_SEPARATOR . $file_name;
+        $probe = "MikroTik Tools for GLPI SFTP restore diagnostic.\n";
+        $upload_status = 'failed';
+        $upload_message = 'The temporary SFTP upload could not be started.';
+        $cleanup_status = 'not_needed';
+        $cleanup_message = '';
+
+        try {
+            if (file_put_contents($local_file, $probe, LOCK_EX) !== strlen($probe)) {
+                throw new RuntimeException('Could not prepare the temporary SFTP diagnostic file.');
+            }
+            @chmod($local_file, 0600);
+
+            try {
+                $upload = self::runProcess(
+                    $this->sftpCommand($runtime['known_hosts']),
+                    $runtime['environment'],
+                    'put ' . $local_file . ' ' . $file_name . "\n",
+                    45
+                );
+                if ($upload['exit_code'] === 0) {
+                    $upload_status = 'success';
+                    $upload_message = 'RouterOS accepted a temporary SFTP file upload.';
+                } else {
+                    $upload_message = self::sftpFailureMessage($upload['stdout'] . "\n" . $upload['stderr'], $upload['exit_code']);
+                }
+            } catch (RuntimeException $exception) {
+                $upload_message = self::sftpFailureMessage($exception->getMessage(), null);
+            }
+
+            // A failed SFTP put may leave a partial file, so always try to remove
+            // the uniquely named probe after an upload attempt.
+            try {
+                $cleanup = self::runProcess(
+                    $this->sftpCommand($runtime['known_hosts']),
+                    $runtime['environment'],
+                    'rm ' . $file_name . "\n",
+                    30
+                );
+                if ($cleanup['exit_code'] === 0) {
+                    $cleanup_status = 'success';
+                    $cleanup_message = 'The temporary diagnostic file was removed.';
+                } else {
+                    $cleanup_status = 'warning';
+                    $cleanup_message = 'RouterOS did not confirm removal of the diagnostic file. Check the Files list for ' . $file_name . '.';
+                }
+            } catch (RuntimeException) {
+                $cleanup_status = 'warning';
+                $cleanup_message = 'Cleanup could not be confirmed. Check the Files list for ' . $file_name . '.';
+            }
+
+            return [
+                'fingerprint_status' => 'success',
+                'fingerprint_message' => 'The current SSH fingerprint matches the value pinned in GLPI.',
+                'upload_status' => $upload_status,
+                'upload_message' => $upload_message,
+                'cleanup_status' => $cleanup_status,
+                'cleanup_message' => $cleanup_message,
+            ];
         } finally {
             self::removeRuntimeContext($runtime);
         }
@@ -134,7 +313,7 @@ final class RouterOsSshClient
                 $batch,
                 90
             );
-            self::requireSuccess($sftp, 'SFTP upload failed');
+            self::requireSftpSuccess($sftp);
             $remote_created = true;
 
             $this->runRouterCommand($runtime, '/import file-name=' . $file_name . ' verbose=yes dry-run=yes', 'RouterOS dry-run failed');
@@ -161,6 +340,52 @@ final class RouterOsSshClient
         );
         self::requireSuccess($result, $failure_message);
         return $result['stdout'];
+    }
+
+    private static function sftpFailureMessage(string $output, ?int $exit_code): string
+    {
+        $text = strtolower($output);
+        if (str_contains($text, 'host key verification failed') || str_contains($text, 'remote host identification has changed')) {
+            return 'SSH host-key verification failed. Compare the current router fingerprint with the trusted value in GLPI.';
+        }
+        if (str_contains($text, 'permission denied (') || str_contains($text, 'authentication failed') || str_contains($text, 'no supported authentication methods')) {
+            return 'SSH/SFTP authentication was rejected. Check the saved username, password, and SSH authentication policy.';
+        }
+        if (str_contains($text, 'permission denied') || str_contains($text, 'failure') || str_contains($text, 'couldn') && (str_contains($text, 'open') || str_contains($text, 'write'))) {
+            return 'RouterOS refused the file upload. The most likely cause is a missing ftp policy on the GLPI account; also check RouterOS file storage. Restore later requires write policy too.';
+        }
+        if (str_contains($text, 'subsystem request failed') || str_contains($text, 'sftp server') || str_contains($text, 'subsystem')) {
+            return 'SSH was reached, but the SFTP subsystem was unavailable or rejected. Check RouterOS SFTP support and SSH service policy.';
+        }
+        if (str_contains($text, 'connection timed out') || str_contains($text, 'connection refused') || str_contains($text, 'network is unreachable') || str_contains($text, 'connection closed')) {
+            return 'The GLPI server could not complete the SSH/SFTP connection. Check the router SSH host, port, and reachability from the GLPI server.';
+        }
+
+        $suffix = $exit_code === null ? '' : ' (SFTP exit code ' . $exit_code . ')';
+        return 'SFTP returned an unclassified failure' . $suffix . '. Check the RouterOS ftp policy, available file storage, and SSH/SFTP service.';
+    }
+
+    private static function routerOsProperties(string $line): array
+    {
+        preg_match_all('/(?:^|\s)([A-Za-z0-9_-]+)=(?:"((?:\\\\.|[^"])*)"|([^\s]+))/', $line, $matches, PREG_SET_ORDER);
+        $properties = [];
+        foreach ($matches as $match) {
+            $value = $match[2] !== '' ? $match[2] : ($match[3] ?? '');
+            $properties[$match[1]] = str_replace(['\\\\', '\\"'], ['\\', '"'], $value);
+        }
+        return $properties;
+    }
+
+    private static function safePolicyFailureMessage(string $message): string
+    {
+        $text = strtolower($message);
+        if (str_contains($text, 'host key') || str_contains($text, 'fingerprint')) {
+            return 'SSH fingerprint verification failed. Verify the pinned router fingerprint before diagnosing policies.';
+        }
+        if (str_contains($text, 'authentication') || str_contains($text, 'permission denied')) {
+            return 'SSH authentication or read-only policy inspection failed. Verify the saved credentials and the router account rights.';
+        }
+        return 'The SSH policy check could not complete. Verify that the SSH endpoint is reachable and its fingerprint is pinned.';
     }
 
     private function createRuntimeContext(): array
@@ -350,6 +575,15 @@ final class RouterOsSshClient
         // RouterOS can echo the failing script line, which may contain passwords.
         // Keep command output out of GLPI messages and logs.
         throw new RuntimeException($context . '. Check RouterOS SSH/SFTP access policies and connectivity.');
+    }
+
+    private static function requireSftpSuccess(array $result): void
+    {
+        if ($result['exit_code'] === 0) {
+            return;
+        }
+        // Classify only known safe error patterns; never display raw SSH/SFTP output.
+        throw new RuntimeException(self::sftpFailureMessage($result['stdout'] . "\n" . $result['stderr'], $result['exit_code']));
     }
 
     private static function validateHost(string $host): void

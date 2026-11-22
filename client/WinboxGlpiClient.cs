@@ -11,10 +11,10 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: AssemblyTitle("Winbox - GLPI")]
-[assembly: AssemblyDescription("Winbox - GLPI client installer and protocol handler")]
-[assembly: AssemblyCompany("Winbox - GLPI")]
-[assembly: AssemblyProduct("Winbox - GLPI")]
+[assembly: AssemblyTitle("MikroTik Tools for GLPI")]
+[assembly: AssemblyDescription("MikroTik Tools for GLPI client installer and protocol handler")]
+[assembly: AssemblyCompany("Connect IT")]
+[assembly: AssemblyProduct("MikroTik Tools for GLPI")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
@@ -22,7 +22,7 @@ internal static class Program
 {
     // GLPI replaces this fixed-width UTF-16 marker with the current server URL when serving the EXE.
     private static readonly string ServerBaseUrl = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~".TrimEnd('\0');
-    private const string ProductName = "Winbox - GLPI";
+    private const string ProductName = "MikroTik Tools for GLPI";
     private const string InstallFolderName = "Winbox-GLPI";
 
     [STAThread]
@@ -69,7 +69,7 @@ internal static class Program
             || (baseUri.Scheme != Uri.UriSchemeHttp && baseUri.Scheme != Uri.UriSchemeHttps))
         {
             throw new InvalidOperationException(
-                "The installer does not have a valid GLPI server address. Download the current file from the Winbox - GLPI setup page."
+                "The installer does not have a valid GLPI server address. Download the current file from the MikroTik Tools for GLPI setup page."
             );
         }
 
@@ -93,12 +93,34 @@ internal static class Program
         RegisterProtocol("mikrotik", "URL:MikroTik Winbox Protocol", installedExe);
         RegisterProtocol("mikrotik-putty", "URL:MikroTik SSH via PuTTY Protocol", installedExe);
         RegisterProtocol("mikrotik-kitty", "URL:MikroTik SSH via KiTTY Protocol", installedExe);
+        RegisterProtocol("mikrotik-sshdiag", "URL:MikroTik SSH diagnostic Protocol", installedExe);
         WriteLog("Installer completed; per-user Winbox, PuTTY SSH, and KiTTY SSH protocol handlers are registered.");
 
+        string clientsDirectory = Path.Combine(installDirectory, "clients");
+        string winboxStatus;
+        string puttyStatus;
+        string kittyStatus;
+        string plinkStatus;
+        using (Form progress = CreateSetupProgress())
+        {
+            progress.Show();
+            progress.Refresh();
+            Application.DoEvents();
+            winboxStatus = EnsureClient("winbox", clientsDirectory, progress);
+            puttyStatus = EnsureClient("putty", clientsDirectory, progress);
+            kittyStatus = EnsureClient("kitty", clientsDirectory, progress);
+            plinkStatus = EnsureClient("plink", clientsDirectory, progress);
+            progress.Close();
+        }
+
+        string winboxPath = FindWinbox();
         string puttyPath = FindSshClient("putty");
         string kittyPath = FindSshClient("kitty");
-        WriteLog("SSH client discovery after setup: PuTTY=" + (puttyPath == null ? "not found" : "found")
-            + "; KiTTY=" + (kittyPath == null ? "not found" : "found") + ".");
+        string plinkPath = FindSshClient("plink");
+        WriteLog("Client setup complete: WinBox=" + (winboxPath == null ? "not found" : winboxStatus)
+            + "; PuTTY=" + (puttyPath == null ? "not found" : puttyStatus)
+            + "; KiTTY=" + (kittyPath == null ? "not found" : kittyStatus)
+            + "; Plink diagnostic=" + (plinkPath == null ? "not found" : plinkStatus) + ".");
 
         string httpWarning = baseUri.Scheme == Uri.UriSchemeHttp
             ? "\n\nThe test GLPI server uses HTTP. Use test credentials only."
@@ -106,14 +128,127 @@ internal static class Program
         MessageBox.Show(
             "Setup is complete for the current Windows user.\n\n"
             + "Open a network equipment record in GLPI and choose Open in Winbox, Open SSH in PuTTY, or Open SSH in KiTTY.\n"
-            + "PuTTY: " + (puttyPath == null ? "not detected; install it from the setup page." : "detected.") + "\n"
-            + "KiTTY: " + (kittyPath == null ? "not detected; install it from the setup page." : "detected.") + "\n"
-            + "The log is saved to:\n" + Path.Combine(installDirectory, "winbox-glpi-launch.log")
+            + "WinBox: " + (winboxPath == null ? "not installed. " + winboxStatus : winboxStatus) + "\n"
+            + "PuTTY: " + (puttyPath == null ? "not installed. " + puttyStatus : puttyStatus) + "\n"
+            + "KiTTY: " + (kittyPath == null ? "not installed. " + kittyStatus : kittyStatus) + "\n\n"
+            + "SSH diagnostic: " + (plinkPath == null ? "not installed. " + plinkStatus : plinkStatus) + "\n\n"
+            + "If a download failed, check the Internet connection and run this setup file again.\n"
+            + "Setup and launch log:\n" + Path.Combine(installDirectory, "winbox-glpi-launch.log") + "\n"
+            + "Temporary SSH diagnostic log:\n" + Path.Combine(installDirectory, "winbox-glpi-ssh-test.log")
             + httpWarning,
             ProductName,
             MessageBoxButtons.OK,
             MessageBoxIcon.Information
         );
+    }
+
+    private static Form CreateSetupProgress()
+    {
+        Form form = new Form();
+        form.Text = ProductName + " setup";
+        form.FormBorderStyle = FormBorderStyle.FixedDialog;
+        form.StartPosition = FormStartPosition.CenterScreen;
+        form.ClientSize = new System.Drawing.Size(470, 110);
+        form.ControlBox = false;
+        form.ShowInTaskbar = false;
+
+        Label label = new Label();
+        label.Name = "setupStatus";
+        label.Text = "Checking WinBox, PuTTY and KiTTY...";
+        label.AutoSize = false;
+        label.Dock = DockStyle.Top;
+        label.Height = 62;
+        label.Padding = new Padding(14, 14, 14, 8);
+        form.Controls.Add(label);
+
+        ProgressBar progress = new ProgressBar();
+        progress.Style = ProgressBarStyle.Marquee;
+        progress.MarqueeAnimationSpeed = 24;
+        progress.Dock = DockStyle.Bottom;
+        form.Controls.Add(progress);
+        return form;
+    }
+
+    private static string EnsureClient(string client, string clientsDirectory, Form progress)
+    {
+        string clientName = client == "winbox" ? "WinBox" : (client == "putty" ? "PuTTY"
+            : (client == "kitty" ? "KiTTY" : "Plink diagnostic"));
+        string existing = client == "winbox" ? FindWinbox() : FindSshClient(client);
+        if (!String.IsNullOrEmpty(existing))
+        {
+            bool requiresPasswordFile = client == "putty" || client == "plink";
+            bool compatible = !requiresPasswordFile || SupportsPuttyPasswordFile(existing);
+            if (compatible)
+            {
+                WriteLog(clientName + " was found at " + existing + "; the existing installation was left unchanged.");
+                return "found; existing installation left unchanged";
+            }
+
+            string managedPath = GetManagedClientPath(client, clientsDirectory);
+            if (String.Equals(Path.GetFullPath(existing), Path.GetFullPath(managedPath), StringComparison.OrdinalIgnoreCase))
+            {
+                WriteLog(clientName + " is installed, but this version does not support the required password-file option; it was left unchanged.");
+                return "found, but too old for automatic authentication; left unchanged";
+            }
+
+            if (File.Exists(managedPath))
+            {
+                if (SupportsPuttyPasswordFile(managedPath))
+                {
+                    WriteLog(clientName + " compatible managed copy is available at " + managedPath
+                        + "; the older external installation was left unchanged.");
+                    return "compatible managed copy ready; external installation left unchanged";
+                }
+                WriteLog(clientName + " has an incompatible managed copy at " + managedPath
+                    + "; neither managed nor external installation was changed.");
+                return "installed version is too old; existing files left unchanged";
+            }
+
+            WriteLog(clientName + " existing version does not support the required password-file option; installing a separate managed copy without changing it.");
+        }
+
+        SetSetupProgress(progress, "Checking or installing " + clientName + "...");
+        try
+        {
+            SshClientInstaller.InstallIfMissing(client, clientsDirectory);
+            WriteLog(clientName + " package was downloaded over HTTPS, checksum-verified, and installed in the per-user managed folder.");
+            return "installed for this Windows user; existing applications were not changed";
+        }
+        catch (Exception exception)
+        {
+            string message = Sanitize(exception.Message);
+            existing = client == "winbox" ? FindWinbox() : FindSshClient(client);
+            if (!String.IsNullOrEmpty(existing))
+            {
+                WriteLog(clientName + " installation failed; existing file at " + existing + " remains unchanged: " + message);
+                return "download failed; existing installation left unchanged";
+            }
+            WriteLog(clientName + " installation failed: " + message);
+            return "installation failed: " + message;
+        }
+    }
+
+    private static string GetManagedClientPath(string client, string clientsDirectory)
+    {
+        string folder = client == "kitty" ? "KiTTY" : "PuTTY";
+        string executable = client == "plink" ? "plink.exe" : "putty.exe";
+        return Path.Combine(clientsDirectory, folder, executable);
+    }
+
+    private static void SetSetupProgress(Form progress, string message)
+    {
+        if (progress == null || progress.IsDisposed) return;
+        foreach (Control control in progress.Controls)
+        {
+            Label label = control as Label;
+            if (label != null)
+            {
+                label.Text = message;
+                label.Refresh();
+                break;
+            }
+        }
+        Application.DoEvents();
     }
 
     private static void RegisterProtocol(string protocol, string description, string installedExe)
@@ -156,7 +291,7 @@ internal static class Program
     {
         Match match = Regex.Match(
             (protocolUri ?? String.Empty).Trim().Trim('"'),
-            @"^mikrotik(?:-(putty|kitty))?://([a-f0-9]{64})/?$",
+            @"^mikrotik(?:-(putty|kitty|sshdiag))?://([a-f0-9]{64})/?$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
         );
         if (!match.Success)
@@ -170,16 +305,21 @@ internal static class Program
         string sshExecutable = null;
         if (client != "winbox")
         {
-            sshExecutable = FindSshClient(client);
+            WriteSshTestLog("event=protocol_received client=" + client);
+            string executableKind = client == "sshdiag" ? "plink" : client;
+            sshExecutable = FindSshClient(executableKind);
             if (String.IsNullOrEmpty(sshExecutable))
             {
-                string clientName = client == "putty" ? "PuTTY" : "KiTTY";
+                string clientName = client == "putty" ? "PuTTY" : (client == "kitty" ? "KiTTY" : "Plink");
                 WriteLog(clientName + ".exe was not found; the launch code was not redeemed.");
+                WriteSshTestLog("event=client_not_found client=" + client);
                 throw new FileNotFoundException(
-                    clientName + ".exe was not found. Install it using the link on the Winbox - GLPI setup page, then try again."
+                    clientName + ".exe was not found. Run Winbox-GLPI-Setup.exe from the setup page again, then retry."
                 );
             }
             WriteLog(client + " executable found.");
+            string productVersion = FileVersionInfo.GetVersionInfo(sshExecutable).ProductVersion ?? "unknown";
+            WriteSshTestLog("event=client_selected client=" + client + " version=" + SanitizeLogValue(productVersion));
         }
 
         Dictionary<string, object> connection = null;
@@ -190,22 +330,38 @@ internal static class Program
             connection = RedeemLaunchCode(token, client);
             launchCodeRedeemed = true;
             WriteLog("GLPI connection exchange succeeded for " + client + ".");
+            if (client != "winbox")
+            {
+                WriteSshTestLog("event=glpi_exchange_succeeded client=" + client);
+            }
 
             if (client == "winbox")
             {
                 StartWinbox(connection);
+            }
+            else if (client == "sshdiag")
+            {
+                RunSshDiagnostic(connection, sshExecutable);
             }
             else
             {
                 StartSshClient(connection, client, sshExecutable);
             }
 
-            WriteLog(client + " process start returned successfully.");
-            ReportLaunchResult(token, "started", client);
+            if (client != "sshdiag")
+            {
+                WriteLog(client + " process start returned successfully.");
+                ReportLaunchResult(token, "started", client);
+            }
         }
-        catch
+        catch (Exception exception)
         {
-            if (launchCodeRedeemed) ReportLaunchResult(token, "failed", client);
+            if (client != "winbox")
+            {
+                // Do not put exception text or connection details in the temporary diagnostic log.
+                WriteSshTestLog("event=launcher_error client=" + client + " type=" + exception.GetType().Name);
+            }
+            if (launchCodeRedeemed && client != "sshdiag") ReportLaunchResult(token, "failed", client);
             throw;
         }
         finally
@@ -264,19 +420,58 @@ internal static class Program
         {
             throw new InvalidOperationException("GLPI returned incomplete SSH connection details.");
         }
+        if (String.IsNullOrEmpty(password))
+        {
+            WriteSshTestLog("event=credential_fields client=" + client + " host_present=" + (!String.IsNullOrWhiteSpace(host))
+                + " port_valid=" + (Int32.TryParse(port, out parsedPort) && parsedPort >= 1 && parsedPort <= 65535)
+                + " username_present=" + (!String.IsNullOrWhiteSpace(username)) + " password_present=false");
+            throw new InvalidOperationException("No SSH password is saved for this device in GLPI. Ask a GLPI administrator to configure the device credentials before launching SSH.");
+        }
+        bool passwordHasLineBreak = password.IndexOf('\r') >= 0 || password.IndexOf('\n') >= 0;
+        bool passwordHasNonAscii = false;
+        foreach (char character in password)
+        {
+            if (character > 127)
+            {
+                passwordHasNonAscii = true;
+                break;
+            }
+        }
+        WriteSshTestLog("event=credential_fields client=" + client + " target=" + SanitizeLogValue(host) + ":" + parsedPort
+            + " host_present=" + (!String.IsNullOrWhiteSpace(host))
+            + " port_valid=" + (Int32.TryParse(port, out parsedPort) && parsedPort >= 1 && parsedPort <= 65535)
+            + " username_present=" + (!String.IsNullOrWhiteSpace(username)) + " password_present=true"
+            + " password_has_linebreak=" + passwordHasLineBreak + " password_has_nonascii=" + passwordHasNonAscii
+            + " password_has_quote=" + password.Contains("\"")
+            + " password_has_outer_space=" + (password.Length > 0 && (password[0] == ' ' || password[password.Length - 1] == ' ')));
+        if (client == "putty" && !SupportsPuttyPasswordFile(executable))
+        {
+            WriteSshTestLog("event=automatic_password_unavailable client=putty");
+            throw new InvalidOperationException("This PuTTY version cannot receive the saved password without an interactive prompt. Run the current MikroTik Tools for GLPI setup installer to install its managed PuTTY version.");
+        }
+        if (passwordHasLineBreak)
+        {
+            WriteSshTestLog("event=automatic_password_unavailable client=" + client + " reason=password_linebreak");
+            throw new InvalidOperationException("The saved SSH password contains a line break and cannot be supplied automatically. Re-save it as a single-line password in GLPI.");
+        }
 
         ProcessStartInfo startInfo = new ProcessStartInfo();
         startInfo.FileName = executable;
         string passwordFile = null;
         startInfo.Arguments = "-ssh -P " + QuoteArgument(port) + " -l " + QuoteArgument(username) + " ";
-        if (client == "putty" && !String.IsNullOrEmpty(password) && SupportsPuttyPasswordFile(executable))
+        if (client == "putty")
         {
-            passwordFile = WriteTemporaryPasswordFile(password);
+            passwordFile = WriteTemporaryPasswordFile(password, "putty-password");
             startInfo.Arguments += "-pwfile " + QuoteArgument(passwordFile) + " ";
+            bool fileMatchesSavedValue = File.Exists(passwordFile)
+                && String.Equals(File.ReadAllText(passwordFile, new UTF8Encoding(false)), password + Environment.NewLine, StringComparison.Ordinal);
+            WriteSshTestLog("event=auth_material_ready client=putty method=pwfile file_created=" + File.Exists(passwordFile)
+                + " file_matches_saved_value=" + fileMatchesSavedValue);
         }
-        else if (client == "kitty" && !String.IsNullOrEmpty(password))
+        else if (client == "kitty")
         {
             startInfo.Arguments += "-pass " + QuoteArgument(password) + " ";
+            WriteSshTestLog("event=auth_material_ready client=kitty method=pass_argument password_in_command_line=true");
         }
         startInfo.Arguments += QuoteArgument(host);
         startInfo.WorkingDirectory = Path.GetDirectoryName(executable);
@@ -290,6 +485,7 @@ internal static class Program
                 {
                     throw new InvalidOperationException("Windows could not start the SSH client.");
                 }
+                WriteSshTestLog("event=process_started client=" + client + " pid=" + process.Id + " auth_result=unknown");
                 if (passwordFile != null)
                 {
                     try
@@ -302,6 +498,7 @@ internal static class Program
                         Thread.Sleep(1000);
                     }
                     Thread.Sleep(500);
+                    WriteSshTestLog("event=pwfile_cleanup_started client=putty exists=" + File.Exists(passwordFile));
                 }
             }
         }
@@ -317,23 +514,18 @@ internal static class Program
                 {
                     WriteLog("Could not remove the temporary PuTTY password file.");
                 }
+                WriteSshTestLog("event=pwfile_cleanup_finished client=putty exists=" + File.Exists(passwordFile));
             }
             password = null;
         }
 
-        if (String.IsNullOrEmpty(GetString(connection, "password")))
+        if (client == "putty")
         {
-            WriteLog(client + " started without a saved password; the client may prompt for it.");
-        }
-        else if (client == "putty" && passwordFile == null)
-        {
-            WriteLog("PuTTY started without automatic password; PuTTY 0.83 or newer is required for -pwfile.");
+            WriteLog("PuTTY process started; the saved password was supplied through a temporary password file.");
         }
         else
         {
-            WriteLog(client == "putty"
-                ? "PuTTY process started; the saved password was supplied through a temporary password file."
-                : "KiTTY process started with saved credentials; the password was not written to the launch log.");
+            WriteLog("KiTTY process started with saved credentials; the password was not written to the launch log.");
         }
     }
 
@@ -356,7 +548,146 @@ internal static class Program
         }
     }
 
-    private static string WriteTemporaryPasswordFile(string password)
+    private static void RunSshDiagnostic(Dictionary<string, object> connection, string plinkExecutable)
+    {
+        string host = GetString(connection, "host");
+        string port = GetString(connection, "port");
+        string username = GetString(connection, "username");
+        string password = GetString(connection, "password");
+        int parsedPort;
+        bool portValid = Int32.TryParse(port, out parsedPort) && parsedPort >= 1 && parsedPort <= 65535;
+        WriteSshTestLog("event=diagnostic_started client=plink host_present=" + (!String.IsNullOrWhiteSpace(host))
+            + " port_valid=" + portValid + " username_present=" + (!String.IsNullOrWhiteSpace(username))
+            + " password_present=" + (!String.IsNullOrEmpty(password)));
+
+        if (String.IsNullOrWhiteSpace(host) || String.IsNullOrWhiteSpace(username) || !portValid || String.IsNullOrEmpty(password))
+        {
+            WriteSshTestLog("event=diagnostic_result result=missing_connection_field");
+            throw new InvalidOperationException("GLPI returned incomplete SSH diagnostic details. Ask a GLPI administrator to check the device settings.");
+        }
+        if (password.IndexOf('\r') >= 0 || password.IndexOf('\n') >= 0)
+        {
+            WriteSshTestLog("event=diagnostic_result result=password_contains_linebreak");
+            throw new InvalidOperationException("The saved SSH password contains a line break and cannot be tested automatically. Re-save it as a single-line password in GLPI.");
+        }
+
+        string passwordFile = null;
+        StringBuilder transcript = new StringBuilder();
+        object transcriptLock = new object();
+        DataReceivedEventHandler capture = delegate(object sender, DataReceivedEventArgs eventArgs)
+        {
+            if (eventArgs.Data == null) return;
+            lock (transcriptLock)
+            {
+                if (transcript.Length < 131072) transcript.AppendLine(eventArgs.Data);
+            }
+        };
+
+        string result = "unknown";
+        int? exitCode = null;
+        bool timedOut = false;
+        try
+        {
+            passwordFile = WriteTemporaryPasswordFile(password, "ssh-diagnostic-password");
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = plinkExecutable;
+            startInfo.Arguments = "-batch -noagent -v -ssh -P " + QuoteArgument(port)
+                + " -l " + QuoteArgument(username) + " -pwfile " + QuoteArgument(passwordFile)
+                + " " + QuoteArgument(host) + " " + QuoteArgument("/system identity print");
+            startInfo.WorkingDirectory = Path.GetDirectoryName(plinkExecutable);
+            startInfo.UseShellExecute = false;
+            startInfo.CreateNoWindow = true;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+
+            using (Process process = Process.Start(startInfo))
+            {
+                if (process == null) throw new InvalidOperationException("Windows could not start the Plink diagnostic client.");
+                process.OutputDataReceived += capture;
+                process.ErrorDataReceived += capture;
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                WriteSshTestLog("event=diagnostic_process_started pid=" + process.Id + " target=" + host + ":" + port);
+                if (!process.WaitForExit(20000))
+                {
+                    timedOut = true;
+                    try { process.Kill(); } catch { }
+                    process.WaitForExit();
+                }
+                else
+                {
+                    process.WaitForExit(); // Drain asynchronous stdout/stderr callbacks.
+                    exitCode = process.ExitCode;
+                }
+            }
+
+            string output;
+            lock (transcriptLock) output = transcript.ToString();
+            result = SshDiagnosticClassifier.Classify(output, exitCode, timedOut);
+            WriteSshTestLog("event=diagnostic_handshake " + SshDiagnosticClassifier.DescribeHandshake(output));
+            WriteSshTestLog("event=diagnostic_result result=" + result
+                + " exit_code=" + (exitCode.HasValue ? exitCode.Value.ToString() : "none")
+                + " timed_out=" + timedOut + " target=" + host + ":" + port);
+            ShowSshDiagnosticResult(result, host, port);
+        }
+        catch (Exception exception)
+        {
+            WriteSshTestLog("event=diagnostic_error type=" + exception.GetType().Name);
+            throw;
+        }
+        finally
+        {
+            if (passwordFile != null)
+            {
+                try { if (File.Exists(passwordFile)) File.Delete(passwordFile); }
+                catch { WriteSshTestLog("event=diagnostic_password_file_cleanup_failed"); }
+            }
+            password = null;
+        }
+    }
+
+    private static void ShowSshDiagnosticResult(string result, string host, string port)
+    {
+        string message;
+        MessageBoxIcon icon;
+        switch (result)
+        {
+            case "authentication_accepted":
+                message = "SSH authentication succeeded with the saved GLPI credentials. RouterOS answered the read-only identity check. If PuTTY or KiTTY still fails, the remaining issue is in that GUI client's launch settings.";
+                icon = MessageBoxIcon.Information;
+                break;
+            case "authentication_accepted_command_failed":
+                message = "RouterOS accepted the saved GLPI credentials, but the read-only identity check failed. The SSH account may not have read permission.";
+                icon = MessageBoxIcon.Warning;
+                break;
+            case "authentication_rejected":
+                message = "The SSH server at the configured host and port rejected authentication. First verify that this endpoint is the intended router. Then check the saved username/password and RouterOS SSH password-authentication policy. Compare the server fingerprint in the diagnostic log with a trusted router fingerprint.";
+                icon = MessageBoxIcon.Error;
+                break;
+            case "host_key_not_trusted":
+                message = "The SSH connection stopped because this Windows user's PuTTY host-key cache does not trust the router key. Verify and trust the router fingerprint in PuTTY, then run the test again.";
+                icon = MessageBoxIcon.Warning;
+                break;
+            case "connection_failed":
+                message = "The SSH client could not establish a connection to the configured host and port.";
+                icon = MessageBoxIcon.Error;
+                break;
+            case "timeout":
+                message = "The SSH diagnostic timed out before the server returned a result.";
+                icon = MessageBoxIcon.Warning;
+                break;
+            default:
+                message = "The diagnostic could not classify the SSH response. Send the temporary SSH diagnostic log to the GLPI administrator.";
+                icon = MessageBoxIcon.Warning;
+                break;
+        }
+        string logPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            InstallFolderName, "winbox-glpi-ssh-test.log");
+        MessageBox.Show(message + "\n\nTarget: " + host + ":" + port + "\nDiagnostic log:\n" + logPath,
+            ProductName + " — SSH diagnostic", MessageBoxButtons.OK, icon);
+    }
+
+    private static string WriteTemporaryPasswordFile(string password, string filePrefix)
     {
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (String.IsNullOrEmpty(localAppData))
@@ -366,7 +697,7 @@ internal static class Program
 
         string directory = Path.Combine(localAppData, InstallFolderName);
         Directory.CreateDirectory(directory);
-        string path = Path.Combine(directory, "putty-password-" + Guid.NewGuid().ToString("N") + ".tmp");
+        string path = Path.Combine(directory, filePrefix + "-" + Guid.NewGuid().ToString("N") + ".tmp");
         File.WriteAllText(path, password + Environment.NewLine, new UTF8Encoding(false));
         File.SetAttributes(path, FileAttributes.Hidden);
         return path;
@@ -490,6 +821,12 @@ internal static class Program
         candidates.Add(@"C:\Tools\winbox.exe");
         candidates.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WinBox", "winbox.exe"));
         candidates.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "WinBox", "winbox.exe"));
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (!String.IsNullOrEmpty(localAppData))
+        {
+            candidates.Add(Path.Combine(localAppData, "Programs", "WinBox", "winbox.exe"));
+            candidates.Add(Path.Combine(localAppData, "WinBox", "winbox.exe"));
+        }
 
         foreach (string candidate in candidates)
         {
@@ -526,13 +863,48 @@ internal static class Program
             }
         }
 
+        string pathValue = Environment.GetEnvironmentVariable("PATH") ?? String.Empty;
+        foreach (string directory in pathValue.Split(Path.PathSeparator))
+        {
+            if (String.IsNullOrWhiteSpace(directory)) continue;
+            try
+            {
+                string candidate = Path.Combine(directory.Trim().Trim('"'), "winbox.exe");
+                if (File.Exists(candidate)) return candidate;
+            }
+            catch
+            {
+                // Ignore malformed PATH entries and continue checking known locations.
+            }
+        }
+
+        if (!String.IsNullOrEmpty(localAppData))
+        {
+            string managedDirectory = Path.Combine(localAppData, InstallFolderName, "clients", "WinBox");
+            string managed = FindFirstExistingFile(managedDirectory,
+                new string[] { "WinBox.exe", "winbox64.exe", "winbox.exe" });
+            if (managed != null) return managed;
+        }
+
+        return null;
+    }
+
+    private static string FindFirstExistingFile(string root, string[] names)
+    {
+        if (!Directory.Exists(root)) return null;
+        foreach (string name in names)
+        {
+            string[] matches = Directory.GetFiles(root, name, SearchOption.AllDirectories);
+            if (matches.Length > 0) return matches[0];
+        }
         return null;
     }
 
     private static string FindSshClient(string client)
     {
         bool isKitty = client == "kitty";
-        string executableName = isKitty ? "kitty.exe" : "putty.exe";
+        bool isPlink = client == "plink";
+        string executableName = isKitty ? "kitty.exe" : (isPlink ? "plink.exe" : "putty.exe");
         string folderName = isKitty ? "KiTTY" : "PuTTY";
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         List<string> candidates = new List<string>();
@@ -540,6 +912,11 @@ internal static class Program
         if (!String.IsNullOrWhiteSpace(overrideDirectory))
         {
             candidates.Add(Path.Combine(overrideDirectory.Trim().Trim('"'), executableName));
+        }
+        if (!String.IsNullOrEmpty(localAppData))
+        {
+            candidates.Add(Path.Combine(localAppData, InstallFolderName, "clients", folderName, executableName));
+            candidates.Add(Path.Combine(localAppData, InstallFolderName, "clients", executableName));
         }
         candidates.Add(Path.Combine(@"C:\Tools", executableName));
         candidates.Add(Path.Combine(@"C:\Tools", folderName, executableName));
@@ -549,7 +926,6 @@ internal static class Program
         {
             candidates.Add(Path.Combine(localAppData, "Programs", folderName, executableName));
             candidates.Add(Path.Combine(localAppData, folderName, executableName));
-            candidates.Add(Path.Combine(localAppData, InstallFolderName, "clients", executableName));
         }
 
         foreach (string candidate in candidates)
@@ -682,6 +1058,35 @@ internal static class Program
         {
             // Diagnostics must not interrupt installing or launching Winbox.
         }
+    }
+
+    // Temporary, secret-safe diagnostics for the PuTTY/KiTTY test pass. Remove after acceptance.
+    private static void WriteSshTestLog(string message)
+    {
+        try
+        {
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (String.IsNullOrEmpty(localAppData)) return;
+            string directory = Path.Combine(localAppData, InstallFolderName);
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "winbox-glpi-ssh-test.log");
+            FileInfo current = new FileInfo(path);
+            if (current.Exists && current.Length > 32768)
+            {
+                File.WriteAllText(path, String.Empty, new UTF8Encoding(false));
+            }
+            string line = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " " + SanitizeLogValue(message) + Environment.NewLine;
+            File.AppendAllText(path, line, new UTF8Encoding(false));
+        }
+        catch
+        {
+            // Temporary diagnostics must never block an SSH launch.
+        }
+    }
+
+    private static string SanitizeLogValue(string value)
+    {
+        return Regex.Replace(value ?? String.Empty, "[\\r\\n\\t]", " ");
     }
 
     private static string Sanitize(string message)

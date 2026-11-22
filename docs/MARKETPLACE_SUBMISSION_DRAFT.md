@@ -1,43 +1,39 @@
-# GLPI catalog and Marketplace submission
+# GLPI catalog and Marketplace follow-up
 
-## Submission status — 2026-11-21
+## Status
 
-The public raw XML was submitted through the GLPI plugins catalog form. The site confirmed that the plugin will be verified. Catalog review is pending; the plugin is not yet listed. Marketplace review has not been requested because GLPI requires catalog publication first. After acceptance, Connect IT must email `glpi@teclib.com` to request the separate Marketplace review.
+The initial public catalog submission was sent on 2026-11-21 while the plugin was in beta. Teclib confirmation and catalog review were pending at the time of the submission. This document is updated for the first stable release, 1.0.0. The catalog entry and Marketplace status must be confirmed with Teclib; this repository update does not mean either has been approved.
 
-## Pending follow-up
+After the GitHub release is published, Connect IT will email `glpi@teclib.com` with the stable release links, request that the submitted catalog metadata be updated, and ask what remains for catalog acceptance and separate Marketplace review.
 
-- [x] Email Teclib to ask for the catalog review status and clarify Marketplace eligibility requirements. This is a preliminary inquiry, not a formal Marketplace review request.
-- [ ] After Teclib accepts and publishes the plugin in the public catalog, email `glpi@teclib.com` to request the separate Marketplace review. Include the public source repository, release archive, GLPI compatibility evidence, and maintenance contact.
+## Current submission metadata
 
-## Current beta listing
-
-- Display name: Winbox - GLPI
+- Display name: MikroTik Tools for GLPI (formerly Winbox - GLPI)
 - Technical key: `winbox`
-- Publisher: Connect IT
-- Version: 0.4.7
-- Catalog state: beta
-- GLPI compatibility exercised: GLPI 11.0.9; declared range: GLPI 11.x
+- Publisher: Connect IT — <https://connectit.bg>
+- Version: 1.0.0
+- Catalog state: stable in `winbox.xml`; publication pending Teclib confirmation
+- Tested on: GLPI 11.0.9; declared compatibility: GLPI 11.x
 - Source: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin>
 - License: GPL-3.0-or-later
-- Release archive: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v0.4.7/glpi-winbox-plugin-0.4.7.zip>
-- Contact and issue reports: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues>
-- Beta terms: free, no subscription, and no formal support service. Connect IT monitors the issue tracker and considers fixes on a best-effort basis.
+- Release archive: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v1.0.0/glpi-winbox-plugin-1.0.0.zip>
+- Issue reports: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues>
 
 ## Short description
 
-Open MikroTik routers from GLPI using Winbox and manage router configuration backups.
+Manage MikroTik access, diagnostics, and configuration backups from GLPI network equipment records.
 
 ## Long description
 
-Winbox - GLPI adds a Winbox connection tab to GLPI network equipment records. Store per-device connection details, launch the locally installed Winbox client through a short-lived one-time handoff, review launch events, and manage RouterOS configuration exports and backups. Optional PuTTY and KiTTY launch handlers are provided for SSH access.
+MikroTik Tools for GLPI adds per-device access actions for WinBox, PuTTY, KiTTY, and WebFig. Its per-user Windows installer registers the browser protocol handlers and installs missing clients. The plugin provides GLPI access logging, SSH host fingerprint verification, read-only RouterOS policy and service diagnostics, masked `.rsc` export/import through REST over HTTPS, and sensitive text backup/restore through SSH/SFTP. WebFig prefers WWW-SSL and falls back to WWW. Actions are governed by GLPI permissions and RouterOS policies.
 
-Version 0.4.7 is a free public beta exercised on GLPI 11.0.9. It has no subscription, purchase, or formal support service. Connect IT monitors the public issue tracker and considers fixes and improvements on a best-effort basis. Compatibility and security review are ongoing.
+Version 1.0.0 is the first stable release for GLPI 11.x, exercised on GLPI 11.0.9. Router credentials are stored as plain text in the GLPI database, so HTTPS and restricted GLPI permissions are required. The source is licensed under GPL-3.0-or-later.
 
 ## Publication sequence
 
-1. Publish the repository and versioned release archive on GitHub.
-2. Submit `winbox.xml` to the GLPI plugin catalog using the process used for GLPI Zebra Shipping.
-3. Resolve any catalog response and wait for catalog acceptance. Catalog acceptance does not itself mean Marketplace approval.
-4. After catalog acceptance, request separate Marketplace review from Teclib and provide the public source, release archive, compatibility evidence, and maintenance contact.
+1. Publish the source and versioned release archive on GitHub.
+2. Send Teclib the stable 1.0.0 release and updated XML, requesting an update to the existing beta submission.
+3. Resolve catalog feedback and wait for Teclib's catalog decision.
+4. If Marketplace review is a separate step after catalog acceptance, request it with the public source, release archive, GLPI compatibility evidence, and maintenance contact.
 
-The plugin remains a free beta while that review is pending. No paid stable release is currently offered. Any later one-time commercial offer must be described separately and must preserve the rights granted by GPL-3.0-or-later.
+Catalog publication and Marketplace approval are distinct decisions. Update this document only when Teclib confirms each status.

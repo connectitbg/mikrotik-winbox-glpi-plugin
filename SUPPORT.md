@@ -1,9 +1,7 @@
 # Support
 
-This plugin is maintained by [Connect IT](https://connectit.bg).
+**MikroTik Tools for GLPI** is maintained by [Connect IT](https://connectit.bg). The source is licensed under GPL-3.0-or-later. Version 1.0.0 is the first stable release for GLPI 11.x, exercised on GLPI 11.0.9.
 
-Winbox - GLPI 0.4.7 is a free beta. There is no subscription, paid license, or formal support service. Connect IT monitors the public issue tracker and may address reproducible defects or improvements on a best-effort basis. The beta has been exercised on GLPI 11.0.9; compatibility with other versions and security review are ongoing. No paid stable release is currently offered.
+Connect IT monitors the [public issue tracker](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues) and may address reproducible defects or improvements. No formal support service is currently offered.
 
-Report a defect with the [Bug report form](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/new?template=bug_report.yml).
-
-Never attach passwords, router configuration exports/backups, one-time launch codes, or customer data to an issue.
+Use the [bug report form](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/new?template=bug_report.yml). Include the GLPI/plugin version, relevant sanitized log events, and steps to reproduce. Never attach passwords, router configuration exports/backups, one-time launch codes, public router addresses, or customer data.

@@ -70,7 +70,7 @@ final class ReportSshLaunchController extends AbstractController
 
         $credential = Access::credentials($DB, (int)$token_row['item_id']);
         $target = $credential
-            ? $credential['ip_address'] . ':' . $credential['ssh_port']
+            ? Access::sshHost($credential) . ':' . $credential['ssh_port']
             : null;
         AccessLog::record(
             (int)$token_row['created_by'],
@@ -80,6 +80,10 @@ final class ReportSshLaunchController extends AbstractController
             $status === 'started' ? 'router_authentication_not_verified' : 'ssh_client_process_did_not_start',
             $target
         );
+        AccessLog::recordSshTest((int)$token_row['item_id'], $client, 'client_process_reported', [
+            'target' => $target,
+            'result' => $status,
+        ]);
 
         return new JsonResponse(['ok' => true], 200, ['Cache-Control' => 'no-store']);
     }

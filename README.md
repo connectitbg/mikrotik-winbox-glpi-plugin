@@ -1,62 +1,87 @@
-# MikroTik Winbox - GLPI Plugin
+# MikroTik Tools for GLPI
 
-GLPI 11 plugin for launching the locally installed Winbox client from a network equipment record.
+**MikroTik Tools for GLPI** is a GLPI 11 plugin for working with MikroTik RouterOS devices from their network equipment records. It is published by [Connect IT](https://connectit.bg) and keeps the existing GLPI plugin key `winbox` for upgrade compatibility. The Windows installer, protocol names, and per-user data folder retain their existing technical names.
 
-Maintained by [Connect IT](https://connectit.bg).
+The first stable release is **1.0.0**. The source is licensed under **GPL-3.0-or-later**. See [release notes](docs/RELEASE_NOTES_1.0.0.md) and [support information](SUPPORT.md).
 
-## Beta status
+## Features
 
-Version 0.4.7 is a free public beta. There is no subscription, purchase, or formal support service at this stage. Connect IT will monitor the public issue tracker and consider fixes and improvements on a best-effort basis. The beta has been exercised on GLPI 11.0.9; broader compatibility and security review are still in progress. No paid stable release is currently offered. If a commercial stable edition is released later, its terms will be announced separately. The source remains licensed under GPL-3.0-or-later.
+- Per-device connection settings and access actions for WinBox, PuTTY, KiTTY, and WebFig.
+- A Windows setup application that registers browser protocol handlers and installs only missing or incompatible managed clients. Existing compatible installations are left unchanged.
+- GLPI access logging, including a per-device access log, subject to GLPI profile rights.
+- RouterOS SSH host fingerprint verification and read-only policy/service diagnostics.
+- Masked RouterOS `.rsc` export and import through RouterOS REST over HTTPS.
+- Sensitive text export and restore over SSH/SFTP, with explicit confirmation and a restore-upload diagnostic.
+- A single WebFig action that tries WWW-SSL first and uses WWW only when the TLS endpoint is unavailable.
 
-## Installation
+See the [client setup instructions](client/READ%20ME%20INSTALL.txt) for Windows installation and launch steps.
 
-Download the `glpi-winbox-plugin-0.4.7.zip` asset from the [0.4.7 GitHub release](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/tag/v0.4.7), extract the `winbox` directory into GLPI's `plugins` directory, then install and enable **Winbox - GLPI** from **Setup → Plugins**. Back up the GLPI database before upgrading an existing installation.
+## Requirements
 
-## Support and bug reports
+- GLPI **11.x** (tested on GLPI 11.0.9).
+- PHP 8.2 or later, as required by the GLPI version in use.
+- A supported RouterOS account and enabled service for each feature. Permissions vary by action; the plugin's diagnostics report the policies/services it can verify.
+- For sensitive backup/restore, the GLPI server needs OpenSSH `ssh`, `sftp`, and `ssh-keyscan`, plus network access to the router's configured SSH port.
+- For REST export/import, the GLPI server needs network access to the RouterOS REST API over HTTPS.
 
-Report bugs with the [Bug report form](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/new?template=bug_report.yml). Do not include router passwords, configuration backups, launch codes, public IPs, or customer data in an issue.
+## Install or upgrade
+
+1. Download the `glpi-winbox-plugin-1.0.0.zip` asset from the [1.0.0 GitHub release](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/tag/v1.0.0).
+2. Back up the GLPI database and existing `plugins/winbox` directory.
+3. Extract the archive into GLPI's `plugins` directory so the plugin remains at `plugins/winbox`.
+4. In GLPI, open **Setup → Plugins**, install or upgrade **MikroTik Tools for GLPI**, then enable it.
+5. Open each network equipment record, choose the **Winbox** tab, and enter the connection details for that device.
+
+The display name is updated while the internal plugin key stays `winbox`; this lets GLPI recognize an existing installation. Do not rename the plugin directory.
 
 ## Windows client setup
 
-1. Install the applications you plan to use. Winbox is required for Winbox access; PuTTY or KiTTY is required for its matching SSH button. Use the official links on the GLPI setup page for PuTTY and KiTTY.
-2. Open `/plugins/winbox/InstallClient` on the GLPI server and download `Winbox-GLPI-Setup.exe`.
-3. Double-click the executable. It copies itself to `%LOCALAPPDATA%\Winbox-GLPI`, registers the `mikrotik://`, `mikrotik-putty://`, and `mikrotik-kitty://` handlers for the signed-in user, verifies each effective Windows handler, checks whether PuTTY/KiTTY are detected, and writes a diagnostic log. Administrator rights and PowerShell commands are not required.
-   Users who installed an earlier release should run the updated installer again once to register the PuTTY/KiTTY handlers.
-4. In GLPI, open a network equipment record, select **Winbox**, press **Open in Winbox**, then press **Start Winbox** on the handoff page within 90 seconds. Chrome may ask once before opening the external application.
-5. For SSH, press **Open SSH in PuTTY** or **Open SSH in KiTTY**, then the matching start button on the handoff page. The client uses the saved host, SSH port, username, and password. The handler checks for the selected client before redeeming the one-time code. PuTTY 0.83 or newer reads the password from a short-lived per-user file; older PuTTY versions prompt. KiTTY receives the password through its `-pass` command-line option, which can be visible to other local processes. The one-time browser code contains no router password, and the launch log never records it.
+1. Open `/plugins/winbox/InstallClient` on the GLPI server and download `Winbox-GLPI-Setup.exe` to the Windows computer used to access GLPI.
+2. Double-click the installer. It registers the `mikrotik://`, `mikrotik-putty://`, `mikrotik-kitty://`, and temporary SSH diagnostic handlers for the signed-in Windows user. Administrator rights, a separate `.reg` file, and manual PowerShell commands are not required.
+3. The installer detects the available clients. Compatible existing applications are left unchanged. Missing or incompatible components are downloaded from their official HTTPS sources, verified against pinned SHA-256 hashes, and kept under `%LOCALAPPDATA%\Winbox-GLPI\clients`.
+4. Wait for the completion message. Setup and launch information is written to `%LOCALAPPDATA%\Winbox-GLPI\winbox-glpi-launch.log`. Run the same installer again to repair handlers or retry a failed download.
+5. In GLPI, open a device and choose **Open in Winbox**, **Open SSH in PuTTY**, **Open SSH in KiTTY**, or **Open WebFig**. Confirm the browser prompt to open an external application if it appears. Browser security prompts are not disabled.
 
-The client EXE is configured dynamically with the GLPI base URL when downloaded, so the same plugin package can serve it from each GLPI installation. The page keeps the old `.reg` and PowerShell files under a manual fallback section.
+WinBox launch codes expire after 90 seconds. SSH launch codes have a 5-minute lifetime to allow for the additional handoff step. Codes are single-use and contain no router credentials.
 
-## Credential and launch flow
+The managed client set includes WinBox 4.5, PuTTY/Plink 0.85, and KiTTY 0.76.1.13. The installer does not replace compatible programs found elsewhere. KiTTY's saved password is passed as a command-line option and may be visible to other local processes; prefer PuTTY for systems where that exposure is unacceptable. KiTTY 0.76.1.13 also has a maintainer-reported risk involving crafted terminal sequences from a connected host; see the [KiTTY issue](https://github.com/cyd01/KiTTY/issues/525).
 
-Connection details are stored per network device. The pilot build stores the password as plain text; GLPI controls who can edit or view it. A random one-time code expires after 90 seconds. The browser URI contains only that code. The installed Winbox - GLPI executable exchanges it with GLPI and starts the selected client with the target details. For SSH, the one-time exchange returns the saved password directly to the client; keep the test environment on a trusted network while GLPI uses HTTP.
+## Credentials and permissions
 
-## Access log
+Router credentials are stored per device in the GLPI database. In this release, the password is stored as plain text; GLPI profile and item permissions control who can edit or view it. Configure those permissions carefully and use HTTPS for GLPI. Do not use the HTTP test deployment to exchange production credentials.
 
-Launch requests for Winbox, PuTTY, and KiTTY, client process outcomes, configuration exports, and imports are written to `mikrotik_access.log` in GLPI's log directory. The file appears under **Administration → Logs → Log files** and can be viewed by profiles with the GLPI system log read right. The device's **Winbox** tab also has an **Access log** button for a per-device view, visible only to users with system log read permission and read access to that device. SSH entries use the configured SSH port and identify the client. They record only that the PuTTY/KiTTY process started; RouterOS authentication is not verified.
+Launch handoffs use single-use, time-limited codes. The browser URI contains the code rather than the password. SSH clients receive the saved credentials through the local handler. PuTTY uses a short-lived password file; KiTTY uses its `-pass` argument. Regular SSH launch events confirm only that the client process started; they do **not** prove RouterOS authenticated the user.
 
-## Masked `.rsc` export/import
+The global `mikrotik_access.log` is available under **Administration → Logs → Log files**. A per-device **Access log** button is shown only to users with the required GLPI log-read permission and access to that device. Credentials and launch codes are not written to the access log.
 
-**Download masked .rsc export** and **Import .rsc backup** are available to users with GLPI configuration update permission and update access to the network device. They use RouterOS v7 REST over HTTPS, with strict certificate and hostname verification. Configure the REST API hostname and HTTPS port in the device's Winbox settings; the account must have the required RouterOS REST API read/write policy. The REST service must be enabled and reachable from the GLPI server.
+## Backup and restore actions
 
-Download creates a text `.rsc` export with RouterOS sensitive values masked. Import accepts `.rsc` files up to 60,000 bytes, runs RouterOS import dry-run, then imports the file after an explicit confirmation.
+The device's **Winbox** tab groups actions into access, diagnostics, and backup sections. The four backup actions are:
 
-## Sensitive text backup/restore over SSH
+- **Download masked .rsc export** — exports a RouterOS script with sensitive values masked through REST over HTTPS.
+- **Import .rsc backup** — checks an uploaded script with a dry run and imports it only after explicit confirmation.
+- **Download text backup with sensitive values (SSH)** — uses `/export show-sensitive terse` over verified SSH.
+- **Restore text backup with sensitive values (SSH)** — uploads the selected `.rsc` over SFTP, performs a dry run where the RouterOS version supports it, and imports after explicit confirmation.
 
-**Download text backup with sensitive values (SSH)** and **Restore text backup with sensitive values (SSH)** are restricted to users with GLPI configuration update permission and update access to the device. The GLPI server needs OpenSSH (`ssh`, `sftp`, `ssh-keyscan`) and network access to the configured RouterOS SSH port (22 by default). **Username and password** is the default and uses the per-device credentials saved in GLPI. The optional **SSH key, then password fallback** mode also tries an OpenSSH identity available to the GLPI web service account (for example, `www-data` on Debian); if key authentication does not work, it falls back to the saved password. Install the key with filesystem permissions that allow only the GLPI service account to read it. Encrypted private keys must already be unlocked in an SSH agent available to the web service; GLPI does not ask for or store a key passphrase. This is client authentication; the separate **Verify router SSH fingerprint** action pins the router's server identity before any credentials are sent. Host fingerprint changes are rejected until an administrator verifies the new fingerprint.
+Sensitive text exports contain readable configuration secrets and must be protected as confidential files. RouterOS user passwords and SSH private keys are not recoverable from these text exports. A restore can change network settings or make the router unreachable; use a current backup prepared for that device and RouterOS version.
 
-The RouterOS account needs `ssh`, `read`, and `sensitive`; restore also needs `ftp` and `write`. RouterOS `sensitive` policy controls whether the export may reveal sensitive settings.
+SSH actions require a pinned server fingerprint. Verify the displayed fingerprint against a trusted record before pinning it. The restore-upload diagnostic uploads a randomly named temporary probe and attempts to remove it; it does not import configuration. If cleanup cannot be confirmed, review RouterOS **Files** for the reported temporary filename.
 
-The export uses RouterOS `/export show-sensitive terse`. RouterOS sensitive configuration fields (such as Wi-Fi and service secrets) are included only when the account has the `sensitive` policy. Those values are readable text in the downloaded `.rsc`; SSH protects the connection, not the file. RouterOS system-user passwords and SSH private keys are not exported and cannot be recovered from a text export. The export does not use `show-sensitive` for the masked `.rsc` action above.
+## Diagnostics and configuration
 
-Restore uploads the `.rsc` using SFTP, runs RouterOS import dry-run, and imports it over SSH after explicit confirmation. It requires file-transfer and write policies and RouterOS v7.16 or later for dry-run. Import can change network settings or make the router unreachable; create a current backup and use a file prepared for that device and RouterOS version. GLPI's test site uses HTTP, so use these password-bearing files only on the trusted test network until HTTPS is configured.
+The orange diagnostic actions report the `ssh`, `read`, `sensitive`, `ftp`, and `write` user policies where the active RouterOS group can be verified, and check configured FTP, API, API-SSL, WWW, WWW-SSL, and SSH service endpoints. These checks do not change RouterOS configuration. A transport check confirms reachability only; it does not verify API or WebFig credentials. The `write` policy is inspected without issuing a write command.
 
-### When SSH is unreachable
+An optional SSH setup helper can generate RouterOS commands for an administrator to review and run manually. Those commands may change SSH service and firewall settings. They are never sent or executed automatically by the plugin; review them carefully and use RouterOS Safe Mode when applying remote firewall changes.
 
-The **SSH setup commands** action checks whether the GLPI server can read the router SSH host key and generates a RouterOS script for an administrator to run in WinBox Terminal. It enables SSH on the configured port, sets password authentication, restricts the SSH service address list to the entered source CIDRs, and adds matching narrow input firewall rules. Enter the GLPI source address as the router sees it; if there is NAT, use the public NAT egress IP. Include any existing administrator networks that must retain SSH access because the service allow-list is replaced. The generator refuses IPv4 networks broader than `/24` and IPv6 networks broader than `/64`. The script does not change RouterOS users or groups. Use WinBox Safe Mode for remote firewall changes. After running it, verify the returned SSH fingerprint in GLPI against a trusted record, then pin it.
+## Troubleshooting and security
 
-This action cannot run RouterOS commands remotely while both SSH and the RouterOS REST API are unavailable. RouterOS REST requires the `www-ssl` service or, since RouterOS 7.9, the `www` service; do not enable plain HTTP for credentials. The REST API account also needs the `rest-api` policy.
+- Windows setup and launch log: `%LOCALAPPDATA%\Winbox-GLPI\winbox-glpi-launch.log`.
+- Temporary SSH diagnostic log: `%LOCALAPPDATA%\Winbox-GLPI\winbox-glpi-ssh-test.log`.
+- For SFTP restore failures, use **Diagnose restore upload** in GLPI; no diagnostic file download is needed.
+- If an SSH login is rejected, verify the device's saved username/password and RouterOS SSH authentication policy. The plugin does not bypass RouterOS authentication.
+- The Windows executable is unsigned. Use it only when downloaded from a trusted GLPI server. Production deployments should sign client binaries with the publisher's code-signing certificate.
+- Protect downloaded backups, use HTTPS, and grant the plugin's configuration and access-log rights only to appropriate GLPI profiles.
 
-## Test limits
+## Bug reports
 
-Use HTTPS for any deployment that exchanges router credentials. Restrict HTTP deployments to trusted test networks and test credentials. The client executable is currently unsigned; sign production releases with the project's code-signing certificate.
+Use the [GitHub bug report form](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/new?template=bug_report.yml). Never include passwords, launch codes, customer data, public router addresses, or unredacted configuration backups.

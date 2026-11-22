@@ -7,7 +7,7 @@ $temporaryHelper = Join-Path $env:TEMP ('winbox-glpi-helper-' + [guid]::NewGuid(
 
 try {
     if ($serverBase -like '__WINBOX_GLPI_*__') {
-        throw 'This installer was not downloaded from the Winbox - GLPI setup page.'
+        throw 'This installer was not downloaded from the MikroTik Tools for GLPI setup page.'
     }
 
     $helperUrl = $serverBase.TrimEnd('/') + '/plugins/winbox/InstallClient?file=launch_winbox.ps1'
@@ -47,10 +47,10 @@ try {
     }
 
     Add-Type -AssemblyName PresentationFramework
-    [System.Windows.MessageBox]::Show('Winbox - GLPI е инсталиран за текущия Windows потребител. Обработчиците за Winbox, PuTTY и KiTTY са регистрирани. За SSH инсталирайте PuTTY или KiTTY отделно. Помощникът и логът са в ' + $installDirectory + '.', 'Winbox - GLPI', 'OK', 'Information') | Out-Null
+    [System.Windows.MessageBox]::Show('MikroTik Tools for GLPI protocol handlers are registered for this Windows user. This manual fallback does not install PuTTY or KiTTY; run Winbox-GLPI-Setup.exe from the GLPI setup page to install the managed SSH clients. The helper and log are in ' + $installDirectory + '.', 'MikroTik Tools for GLPI', 'OK', 'Information') | Out-Null
 } catch {
     Add-Type -AssemblyName PresentationFramework
-    [System.Windows.MessageBox]::Show($_.Exception.Message, 'Winbox - GLPI — грешка при инсталиране', 'OK', 'Error') | Out-Null
+    [System.Windows.MessageBox]::Show($_.Exception.Message, 'MikroTik Tools for GLPI — installation error', 'OK', 'Error') | Out-Null
     exit 1
 } finally {
     Remove-Item -LiteralPath $temporaryHelper -Force -ErrorAction SilentlyContinue

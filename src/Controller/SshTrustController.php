@@ -68,7 +68,7 @@ final class SshTrustController extends AbstractController
             . $escape(__('Verify router SSH fingerprint')) . ' — ' . $escape($equipment->fields['name'])
             . '</h2></div><div class="card-body">';
         echo '<p>' . $escape(__('SSH endpoint')) . ': <code>'
-            . $escape($credentials['ip_address'] . ':' . $credentials['ssh_port']) . '</code></p>';
+            . $escape(Access::sshHost($credentials) . ':' . $credentials['ssh_port']) . '</code></p>';
 
         if ($scan_error !== '') {
             echo '<div class="alert alert-danger">' . $escape($scan_error) . '</div>';

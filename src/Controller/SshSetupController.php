@@ -72,7 +72,7 @@ final class SshSetupController extends AbstractController
             . $escape(__('Prepare MikroTik SSH access')) . ' — ' . $escape($equipment->fields['name'])
             . '</h2></div><div class="card-body">';
         echo '<p>' . $escape(__('SSH endpoint')) . ': <code>'
-            . $escape($credentials['ip_address'] . ':' . $credentials['ssh_port']) . '</code></p>';
+            . $escape(Access::sshHost($credentials) . ':' . $credentials['ssh_port']) . '</code></p>';
 
         if ($fingerprints !== []) {
             echo '<div class="alert alert-success">' . $escape(__('The router SSH endpoint responded. You can now verify and pin its fingerprint.')) . '</div>';
@@ -165,7 +165,7 @@ final class SshSetupController extends AbstractController
         }
 
         $lines = [
-            '# Winbox - GLPI: restrict RouterOS SSH to the listed source networks.',
+            '# MikroTik Tools for GLPI: restrict RouterOS SSH to the listed source networks.',
             '# Review this script and keep all current administrator source networks in the list.',
             '# Run in WinBox Terminal as a router administrator; use Safe Mode for remote changes.',
             '/ip service set [find where name="ssh"] disabled=no port=' . $port . ' address=' . implode(',', $sources),

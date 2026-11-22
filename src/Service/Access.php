@@ -12,6 +12,12 @@ final class Access
         return null;
     }
 
+    public static function sshHost(array $credentials): string
+    {
+        $ssh_host = trim((string)($credentials['ssh_host'] ?? ''));
+        return $ssh_host !== '' ? $ssh_host : trim((string)($credentials['ip_address'] ?? ''));
+    }
+
     public static function canReadEquipment(int $item_id): bool
     {
         if ($item_id < 1 || !\Session::getLoginUserID()) return false;

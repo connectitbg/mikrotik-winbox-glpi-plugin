@@ -127,4 +127,35 @@ final class AccessLog
         $line = '[' . date('Y-m-d H:i:s') . '] ' . $json . PHP_EOL;
         @file_put_contents(GLPI_LOG_DIR . '/mikrotik_access.log', $line, FILE_APPEND | LOCK_EX);
     }
+
+    /** Temporary, secret-safe PuTTY/KiTTY diagnostics. Remove after the SSH test pass. */
+    public static function recordSshTest(int $item_id, string $client, string $stage, array $details = []): void
+    {
+        if (!defined('GLPI_LOG_DIR') || $item_id < 1 || !in_array($client, ['putty', 'kitty', 'sshdiag'], true)) {
+            return;
+        }
+
+        $entry = [
+            'device_id' => $item_id,
+            'client' => $client,
+            'stage' => preg_replace('/[^a-z0-9_]/i', '', $stage),
+        ];
+        foreach (['target', 'username_present', 'password_present', 'password_has_line_break', 'result'] as $key) {
+            if (array_key_exists($key, $details) && (is_scalar($details[$key]) || $details[$key] === null)) {
+                $entry[$key] = $details[$key];
+            }
+        }
+
+        $json = json_encode($entry, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($json === false) {
+            return;
+        }
+
+        $path = GLPI_LOG_DIR . '/mikrotik_ssh_test.log';
+        if (is_file($path) && (int)@filesize($path) > 65536) {
+            @file_put_contents($path, '', LOCK_EX);
+        }
+        $line = '[' . date('Y-m-d H:i:s') . '] ' . $json . PHP_EOL;
+        @file_put_contents($path, $line, FILE_APPEND | LOCK_EX);
+    }
 }

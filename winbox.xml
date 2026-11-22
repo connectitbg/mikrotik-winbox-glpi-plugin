@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <root>
-  <name>Winbox - GLPI</name>
+  <name>MikroTik Tools for GLPI</name>
   <key>winbox</key>
-  <state>beta</state>
+  <state>stable</state>
   <logo>https://raw.githubusercontent.com/connectitbg/mikrotik-winbox-glpi-plugin/main/logo.svg</logo>
   <description>
     <short>
-      <en>Open MikroTik routers from GLPI using Winbox and manage router configuration backups.</en>
+      <en>Manage MikroTik access, diagnostics, and configuration backups from GLPI network equipment records.</en>
     </short>
     <long>
-      <en><![CDATA[Adds a Winbox connection tab to GLPI network equipment records. Store per-device connection details, launch the locally installed Winbox client through a short-lived one-time handoff, review launch events, and manage RouterOS configuration exports and backups. PuTTY and KiTTY SSH launch handlers are included in the per-user Windows installer.
+      <en><![CDATA[MikroTik Tools for GLPI adds per-device access actions for WinBox, PuTTY, KiTTY, and WebFig; a Windows installer registers the browser protocol handlers and installs missing clients. It provides GLPI access logs, SSH host fingerprint verification, read-only RouterOS policy and service diagnostics, masked RouterOS .rsc export/import over REST, and sensitive text backup/restore over SSH/SFTP. WebFig prefers WWW-SSL and falls back to WWW. Actions are controlled by GLPI permissions and RouterOS policies.
 
-Version 0.4.7 is a free public beta exercised on GLPI 11.0.9. It has no subscription, purchase, or formal support service. Connect IT monitors the public issue tracker and considers fixes and improvements on a best-effort basis. Compatibility and security review are ongoing.]]></en>
+Version 1.0.0 is the first stable release for GLPI 11.x, exercised on GLPI 11.0.9. Router credentials are stored as plain text in the GLPI database, so use HTTPS and restrict GLPI permissions. The source is licensed under GPL-3.0-or-later.]]></en>
     </long>
   </description>
   <homepage>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin</homepage>
   <download>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases</download>
   <issues>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues</issues>
   <readme>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/blob/main/README.md</readme>
-  <changelog>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/blob/main/docs/RELEASE_NOTES_0.4.7.md</changelog>
+  <changelog>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/blob/main/CHANGELOG.md</changelog>
   <authors>
     <author>Connect IT</author>
   </authors>
   <versions>
     <version>
-      <num>0.4.7</num>
-      <compatibility>~11.0.0</compatibility>
-      <download_url>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v0.4.7/glpi-winbox-plugin-0.4.7.zip</download_url>
+      <num>1.0.0</num>
+      <compatibility>^11.0</compatibility>
+      <download_url>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v1.0.0/glpi-winbox-plugin-1.0.0.zip</download_url>
     </version>
   </versions>
   <langs>
@@ -38,6 +38,7 @@ Version 0.4.7 is a free public beta exercised on GLPI 11.0.9. It has no subscrip
       <tag>Network</tag>
       <tag>MikroTik</tag>
       <tag>Winbox</tag>
+      <tag>SSH</tag>
       <tag>Backup</tag>
     </en>
   </tags>

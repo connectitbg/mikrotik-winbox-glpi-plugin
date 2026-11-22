@@ -19,8 +19,8 @@ function plugin_winbox_boot(): void
 function plugin_version_winbox(): array
 {
     return [
-        'name' => 'Winbox - GLPI',
-        'version' => '0.4.7',
+        'name' => 'MikroTik Tools for GLPI',
+        'version' => '1.0.0',
         'author' => '<a href="https://connectit.bg">Connect IT</a>',
         'homepage' => 'https://connectit.bg',
         'license' => 'GPL-3.0-or-later',
@@ -56,6 +56,12 @@ function plugin_winbox_install(): bool
         `port` SMALLINT UNSIGNED NOT NULL DEFAULT 8291,
         `api_host` VARCHAR(255) DEFAULT NULL,
         `api_port` SMALLINT UNSIGNED NOT NULL DEFAULT 443,
+        `ftp_port` SMALLINT UNSIGNED NOT NULL DEFAULT 21,
+        `routeros_api_port` SMALLINT UNSIGNED NOT NULL DEFAULT 8728,
+        `routeros_api_ssl_port` SMALLINT UNSIGNED NOT NULL DEFAULT 8729,
+        `www_port` SMALLINT UNSIGNED NOT NULL DEFAULT 80,
+        `www_ssl_port` SMALLINT UNSIGNED NOT NULL DEFAULT 443,
+        `ssh_host` VARCHAR(255) DEFAULT NULL,
         `ssh_port` SMALLINT UNSIGNED NOT NULL DEFAULT 22,
         `ssh_auth_method` VARCHAR(32) NOT NULL DEFAULT 'password',
         `ssh_host_keys` TEXT DEFAULT NULL,
@@ -79,6 +85,12 @@ function plugin_winbox_install(): bool
     foreach ([
         'api_host' => 'VARCHAR(255) DEFAULT NULL',
         'api_port' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 443',
+        'ftp_port' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 21',
+        'routeros_api_port' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 8728',
+        'routeros_api_ssl_port' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 8729',
+        'www_port' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 80',
+        'www_ssl_port' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 443',
+        'ssh_host' => 'VARCHAR(255) DEFAULT NULL',
         'ssh_port' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 22',
         'ssh_auth_method' => "VARCHAR(32) NOT NULL DEFAULT 'password'",
         'ssh_host_keys' => 'TEXT DEFAULT NULL',

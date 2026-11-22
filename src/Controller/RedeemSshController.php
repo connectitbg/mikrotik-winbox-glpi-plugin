@@ -20,7 +20,7 @@ final class RedeemSshController extends AbstractController
         $payload = json_decode($request->getContent(), true);
         $token = is_array($payload) ? (string)($payload['token'] ?? '') : '';
         $client = is_array($payload) ? (string)($payload['client'] ?? '') : '';
-        if (!preg_match('/^[a-f0-9]{64}$/', $token) || !in_array($client, ['putty', 'kitty'], true)) {
+        if (!preg_match('/^[a-f0-9]{64}$/', $token) || !in_array($client, ['putty', 'kitty', 'sshdiag'], true)) {
             return new JsonResponse(['error' => 'Invalid SSH launch request'], 400, ['Cache-Control' => 'no-store']);
         }
 
@@ -52,16 +52,26 @@ final class RedeemSshController extends AbstractController
             return new JsonResponse(['error' => 'SSH launch code expired or already used'], 410, ['Cache-Control' => 'no-store']);
         }
 
-        $credential = \GlpiPlugin\Winbox\Service\Access::credentials($DB, (int)$token_row['item_id']);
+        $item_id = (int)$token_row['item_id'];
+        $credential = \GlpiPlugin\Winbox\Service\Access::credentials($DB, $item_id);
         if (!$credential) {
+            \GlpiPlugin\Winbox\Service\AccessLog::recordSshTest($item_id, $client, 'credentials_missing');
             return new JsonResponse(['error' => 'SSH connection details are unavailable'], 404, ['Cache-Control' => 'no-store']);
         }
 
+        $password = (string)($credential['password'] ?? '');
+        \GlpiPlugin\Winbox\Service\AccessLog::recordSshTest($item_id, $client, 'credentials_released', [
+            'target' => \GlpiPlugin\Winbox\Service\Access::sshHost($credential) . ':' . (string)$credential['ssh_port'],
+            'username_present' => trim((string)$credential['username']) !== '',
+            'password_present' => $password !== '',
+            'password_has_line_break' => strpbrk($password, "\r\n") !== false,
+        ]);
+
         return new JsonResponse([
-            'host' => $credential['ip_address'],
+            'host' => \GlpiPlugin\Winbox\Service\Access::sshHost($credential),
             'port' => (string)$credential['ssh_port'],
             'username' => $credential['username'],
-            'password' => $credential['password'],
+            'password' => $password,
         ], 200, ['Cache-Control' => 'no-store', 'Pragma' => 'no-cache']);
     }
 }

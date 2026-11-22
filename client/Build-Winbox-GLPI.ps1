@@ -12,8 +12,16 @@ if (-not (Test-Path -LiteralPath $compiler)) {
 }
 
 $source = Join-Path $PSScriptRoot 'WinboxGlpiClient.cs'
+$clientInstallerSource = Join-Path $PSScriptRoot 'SshClientInstaller.cs'
+$diagnosticClassifierSource = Join-Path $PSScriptRoot 'SshDiagnosticClassifier.cs'
 if (-not (Test-Path -LiteralPath $source)) {
     throw "Client source file was not found: $source"
+}
+if (-not (Test-Path -LiteralPath $clientInstallerSource)) {
+    throw "SSH client installer source file was not found: $clientInstallerSource"
+}
+if (-not (Test-Path -LiteralPath $diagnosticClassifierSource)) {
+    throw "SSH diagnostic classifier source file was not found: $diagnosticClassifierSource"
 }
 
 $outputDirectory = Split-Path -Parent $OutputPath
@@ -25,7 +33,10 @@ if ($outputDirectory) {
     "/out:$OutputPath" `
     /reference:System.Windows.Forms.dll `
     /reference:System.Web.Extensions.dll `
-    $source
+    /reference:System.IO.Compression.dll `
+    $source `
+    $clientInstallerSource `
+    $diagnosticClassifierSource
 if ($LASTEXITCODE -ne 0) {
     throw "C# compilation failed with exit code $LASTEXITCODE."
 }
