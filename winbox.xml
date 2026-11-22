@@ -11,7 +11,7 @@
     <long>
       <en><![CDATA[MikroTik Tools for GLPI adds per-device access actions for WinBox, PuTTY, KiTTY, and WebFig; a Windows installer registers the browser protocol handlers and installs missing clients. It provides GLPI access logs, SSH host fingerprint verification, read-only RouterOS policy and service diagnostics, masked RouterOS .rsc export/import over REST, and sensitive text backup/restore over SSH/SFTP. WebFig prefers WWW-SSL and falls back to WWW. Actions are controlled by GLPI permissions and RouterOS policies.
 
-Version 1.0.0 is the first stable release for GLPI 11.x, exercised on GLPI 11.0.9. Router credentials are stored as plain text in the GLPI database, so use HTTPS and restrict GLPI permissions. The source is licensed under GPL-3.0-or-later.]]></en>
+Version 1.0.1 adds verified compatibility with GLPI 12.x (tested on GLPI 12.0.2); version 1.0.0 was exercised on GLPI 11.0.9. Router credentials are stored as plain text in the GLPI database, so use HTTPS and restrict GLPI permissions. The source is licensed under GPL-3.0-or-later.]]></en>
     </long>
   </description>
   <homepage>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin</homepage>
@@ -23,6 +23,11 @@ Version 1.0.0 is the first stable release for GLPI 11.x, exercised on GLPI 11.0.
     <author>Connect IT</author>
   </authors>
   <versions>
+    <version>
+      <num>1.0.1</num>
+      <compatibility>^11.0 || ^12.0</compatibility>
+      <download_url>https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v1.0.1/glpi-winbox-plugin-1.0.1.zip</download_url>
+    </version>
     <version>
       <num>1.0.0</num>
       <compatibility>^11.0</compatibility>

@@ -20,12 +20,12 @@ function plugin_version_winbox(): array
 {
     return [
         'name' => 'MikroTik Tools for GLPI',
-        'version' => '1.0.0',
+        'version' => '1.0.1',
         'author' => '<a href="https://connectit.bg">Connect IT</a>',
         'homepage' => 'https://connectit.bg',
         'license' => 'GPL-3.0-or-later',
         'requirements' => [
-            'glpi' => ['min' => '11.0.0', 'max' => '12.0.0'],
+            'glpi' => ['min' => '11.0.0', 'max' => '13.0.0'],
             'php' => ['min' => '8.2'],
         ],
     ];
@@ -33,7 +33,7 @@ function plugin_version_winbox(): array
 
 function plugin_winbox_check_prerequisites(): bool
 {
-    return version_compare(GLPI_VERSION, '11.0.0', '>=') && version_compare(GLPI_VERSION, '12.0.0', '<');
+    return version_compare(GLPI_VERSION, '11.0.0', '>=') && version_compare(GLPI_VERSION, '13.0.0', '<');
 }
 
 function plugin_winbox_check_config($verbose = false): bool

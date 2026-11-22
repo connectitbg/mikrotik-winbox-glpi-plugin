@@ -1,8 +1,8 @@
 # MikroTik Tools for GLPI
 
-**MikroTik Tools for GLPI** is a GLPI 11 plugin for working with MikroTik RouterOS devices from their network equipment records. It is published by [Connect IT](https://connectit.bg) and keeps the existing GLPI plugin key `winbox` for upgrade compatibility. The Windows installer, protocol names, and per-user data folder retain their existing technical names.
+**MikroTik Tools for GLPI** is a GLPI 11 and 12 plugin for working with MikroTik RouterOS devices from their network equipment records. It is published by [Connect IT](https://connectit.bg) and keeps the existing GLPI plugin key `winbox` for upgrade compatibility. The Windows installer, protocol names, and per-user data folder retain their existing technical names.
 
-The first stable release is **1.0.0**. The source is licensed under **GPL-3.0-or-later**. See [release notes](docs/RELEASE_NOTES_1.0.0.md) and [support information](SUPPORT.md).
+The latest release is **1.0.1**. GLPI 12 support was verified on GLPI 12.0.2. The source is licensed under **GPL-3.0-or-later**. See [changelog](CHANGELOG.md), [release notes](docs/RELEASE_NOTES_1.0.1.md), and [support information](SUPPORT.md).
 
 ## Features
 
@@ -24,7 +24,7 @@ See the [client setup instructions](client/READ%20ME%20INSTALL.txt) for Windows 
 
 ## Requirements
 
-- GLPI **11.x** (tested on GLPI 11.0.9).
+- GLPI **11.x or 12.x** (tested on GLPI 11.0.9 and GLPI 12.0.2).
 - PHP 8.2 or later, as required by the GLPI version in use.
 - A supported RouterOS account and enabled service for each feature. Permissions vary by action; the plugin's diagnostics report the policies/services it can verify.
 - For sensitive backup/restore, the GLPI server needs OpenSSH `ssh`, `sftp`, and `ssh-keyscan`, plus network access to the router's configured SSH port.
@@ -32,7 +32,7 @@ See the [client setup instructions](client/READ%20ME%20INSTALL.txt) for Windows 
 
 ## Install or upgrade
 
-1. Download the `glpi-winbox-plugin-1.0.0.zip` asset from the [1.0.0 GitHub release](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/tag/v1.0.0).
+1. Download the `glpi-winbox-plugin-1.0.1.zip` asset from the [1.0.1 GitHub release](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/tag/v1.0.1).
 2. Back up the GLPI database and existing `plugins/winbox` directory.
 3. Extract the archive into GLPI's `plugins` directory so the plugin remains at `plugins/winbox`.
 4. In GLPI, open **Setup → Plugins**, install or upgrade **MikroTik Tools for GLPI**, then enable it.

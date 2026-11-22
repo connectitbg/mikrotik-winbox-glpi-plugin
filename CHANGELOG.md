@@ -2,6 +2,11 @@
 
 Project name: **MikroTik Tools for GLPI** (previously **Winbox - GLPI**). The GLPI technical key remains `winbox`.
 
+## [1.0.1] — 2026-11-22
+
+- Confirmed plugin operation on GLPI 12.0.2 and declared compatibility with GLPI 11.x and 12.x.
+- Updated plugin compatibility metadata and release documentation; no router-side changes are required.
+
 ## [1.0.0] — 2026-11-22
 
 First stable release. See [full release notes](docs/RELEASE_NOTES_1.0.0.md).
