@@ -14,6 +14,12 @@ The first stable release is **1.0.0**. The source is licensed under **GPL-3.0-or
 - Sensitive text export and restore over SSH/SFTP, with explicit confirmation and a restore-upload diagnostic.
 - A single WebFig action that tries WWW-SSL first and uses WWW only when the TLS endpoint is unavailable.
 
+### Interface screenshot
+
+![Access, diagnostics, and backup actions](docs/screenshots/controls-1.0.0.jpg)
+
+The screenshot omits the device address, device name, credentials, and account details.
+
 See the [client setup instructions](client/READ%20ME%20INSTALL.txt) for Windows installation and launch steps.
 
 ## Requirements

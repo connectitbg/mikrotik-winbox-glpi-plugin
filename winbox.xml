@@ -42,5 +42,7 @@ Version 1.0.0 is the first stable release for GLPI 11.x, exercised on GLPI 11.0.
       <tag>Backup</tag>
     </en>
   </tags>
-  <screenshots/>
+  <screenshots>
+    <screenshot>https://raw.githubusercontent.com/connectitbg/mikrotik-winbox-glpi-plugin/v1.0.0/docs/screenshots/controls-1.0.0.jpg</screenshot>
+  </screenshots>
 </root>
