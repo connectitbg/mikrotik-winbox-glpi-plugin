@@ -2,9 +2,9 @@
 
 ## Status
 
-The initial public catalog submission was sent on 2026-11-21 while the plugin was in beta. Teclib confirmation and catalog review were pending at the time of the submission. This document is updated for the first stable release, 1.0.0. The catalog entry and Marketplace status must be confirmed with Teclib; this repository update does not mean either has been approved.
+The initial public catalog submission was sent on 2026-11-21 while the plugin was in beta. Stable release 1.0.0 was published on GitHub on 2026-11-22, and an English follow-up with the updated XML and release links was sent to Teclib on 2026-11-22. Catalog review and Marketplace status are now pending Teclib's response; neither publication nor approval has been confirmed.
 
-After the GitHub release is published, Connect IT will email `glpi@teclib.com` with the stable release links, request that the submitted catalog metadata be updated, and ask what remains for catalog acceptance and separate Marketplace review.
+The follow-up asks Teclib to update the existing beta submission to stable 1.0.0 (or advise whether a new submission is needed), confirm the catalog review status, and explain any remaining requirements for catalog acceptance and separate Marketplace review.
 
 ## Current submission metadata
 
@@ -31,9 +31,9 @@ Version 1.0.0 is the first stable release for GLPI 11.x, exercised on GLPI 11.0.
 
 ## Publication sequence
 
-1. Publish the source and versioned release archive on GitHub.
-2. Send Teclib the stable 1.0.0 release and updated XML, requesting an update to the existing beta submission.
-3. Resolve catalog feedback and wait for Teclib's catalog decision.
-4. If Marketplace review is a separate step after catalog acceptance, request it with the public source, release archive, GLPI compatibility evidence, and maintenance contact.
+1. **Complete:** Publish the source, sanitized interface screenshot, versioned release archive, and catalog XML on GitHub.
+2. **Complete:** Send Teclib the stable 1.0.0 release links and updated XML; request an update to the existing beta submission.
+3. **Pending:** Resolve any catalog feedback and wait for Teclib's catalog decision.
+4. **Pending:** Follow Teclib's instructions for separate Marketplace review, including any eligibility or partner requirements.
 
 Catalog publication and Marketplace approval are distinct decisions. Update this document only when Teclib confirms each status.
