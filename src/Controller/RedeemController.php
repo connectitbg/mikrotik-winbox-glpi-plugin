@@ -54,7 +54,7 @@ final class RedeemController extends AbstractController
         return new JsonResponse([
             'address' => $credential['ip_address'] . ':' . $credential['port'],
             'username' => $credential['username'],
-            'password' => $credential['password'],
+            'password' => \GlpiPlugin\Winbox\Service\Access::decryptPassword((string)$credential['password']),
         ], 200, ['Cache-Control' => 'no-store', 'Pragma' => 'no-cache']);
     }
 }

@@ -2,7 +2,7 @@ MikroTik Tools for GLPI — Client setup
 
 INSTALL
 1. Download Winbox-GLPI-Setup.exe from the GLPI setup page and run it on the Windows computer used to access GLPI.
-2. The installer registers the WinBox, PuTTY, KiTTY, and temporary SSH diagnostic handlers for the current Windows user.
+2. The installer registers the WinBox, PuTTY, and SSH diagnostic handlers for the current Windows user and removes the obsolete KiTTY handler.
 3. It leaves compatible existing programs unchanged. It downloads only missing or incompatible clients from official HTTPS sources, verifies pinned SHA-256 hashes, and stores managed copies under %LOCALAPPDATA%\Winbox-GLPI\clients.
 4. No administrator rights, PowerShell commands, or separate .reg file are required. Internet access to the relevant official download host is required only if a client must be added.
 5. Run the installer again to repair protocol handlers or retry a failed download.
@@ -12,11 +12,11 @@ CONNECT WITH WINBOX
 2. Click Open in Winbox, then click Start Winbox on the handoff page within 90 seconds.
 3. Confirm the browser prompt if it asks to open an external application.
 
-CONNECT WITH PuTTY OR KiTTY
-1. In the device's Winbox tab, choose Open SSH in PuTTY or Open SSH in KiTTY.
+CONNECT WITH PuTTY
+1. In the device's Winbox tab, choose Open SSH in PuTTY.
 2. Click the matching start button on the handoff page within 5 minutes. SSH handoff codes are single-use.
 3. The selected client receives the configured host, SSH port, username, and saved password. Users do not enter credentials at launch.
-4. PuTTY uses a short-lived password file. KiTTY receives the password in a command-line option that may be visible to other local processes. Prefer PuTTY when this exposure is unacceptable.
+4. PuTTY uses a short-lived password file. KiTTY integration was removed because its automatic password option exposes the saved password in the command line. The installer leaves separately installed KiTTY applications alone.
 5. If RouterOS rejects authentication, verify the saved device credentials and RouterOS SSH policy. The handler cannot bypass an authentication rejection.
 
 DIAGNOSTICS AND LOGS
@@ -28,5 +28,4 @@ DIAGNOSTICS AND LOGS
 SECURITY
 - Use HTTPS for GLPI when exchanging production credentials. The test GLPI server uses HTTP and is for test credentials only.
 - The installer is unsigned. Download it only from a GLPI server you trust.
-- The currently managed KiTTY version is 0.76.1.13. Its maintainer has documented risk from crafted terminal sequences received from a connected host: https://github.com/cyd01/KiTTY/issues/525. Prefer PuTTY for untrusted SSH hosts.
 - Manual fallback files are available on the GLPI setup page, but they do not install SSH clients.

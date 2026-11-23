@@ -25,7 +25,7 @@ final class ReportSshLaunchController extends AbstractController
         $status = is_array($payload) ? (string)($payload['status'] ?? '') : '';
         if (
             !preg_match('/^[a-f0-9]{64}$/', $token)
-            || !in_array($client, ['putty', 'kitty'], true)
+            || !in_array($client, ['putty'], true)
             || !in_array($status, ['started', 'failed'], true)
         ) {
             return new JsonResponse(['error' => 'Invalid SSH launch report'], 400, ['Cache-Control' => 'no-store']);

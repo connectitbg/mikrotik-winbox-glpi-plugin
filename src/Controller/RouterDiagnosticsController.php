@@ -101,44 +101,44 @@ final class RouterDiagnosticsController extends AbstractController
         $escape = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         ob_start();
-        \Html::header(__('RouterOS diagnostics'), $_SERVER['PHP_SELF'], 'assets', 'networkequipment');
+        \Html::header(__('RouterOS diagnostics', 'winbox'), $_SERVER['PHP_SELF'], 'assets', 'networkequipment');
         echo '<div class="container-fluid p-3"><div class="card"><div class="card-header"><h2>'
-            . $escape(__('RouterOS function check')) . ' — ' . $escape($equipment->fields['name'])
+            . $escape(__('RouterOS function check', 'winbox')) . ' — ' . $escape($equipment->fields['name'])
             . '</h2></div><div class="card-body">';
 
         if ($result === null) {
-            echo '<div class="alert alert-info">' . $escape(__('This read-only check connects from the GLPI server. It reads the saved account group policies over SSH and checks the configured service ports. It does not change router configuration, upload files, or send credentials to FTP, API, API-SSL, WWW, or WWW-SSL.')) . '</div>';
+            echo '<div class="alert alert-info">' . $escape(__('This read-only check connects from the GLPI server. It reads the saved account group policies over SSH and checks the configured service ports. It does not change router configuration, upload files, or send credentials to FTP, API, API-SSL, WWW, or WWW-SSL.', 'winbox')) . '</div>';
             if ($request->isSecure() === false) {
-                echo '<div class="alert alert-warning">' . $escape(__('GLPI is using HTTP. Use this test only on the trusted test network.')) . '</div>';
+                echo '<div class="alert alert-warning">' . $escape(__('GLPI is using HTTP. Use this test only on the trusted test network.', 'winbox')) . '</div>';
             }
             echo '<form method="post" action="' . $escape($root . '/plugins/winbox/RouterDiagnostics') . '">';
             echo '<input type="hidden" name="id" value="' . $id . '">';
             echo '<input type="hidden" name="_glpi_csrf_token" value="' . $escape(Session::getNewCSRFToken()) . '">';
-            echo '<button class="btn btn-primary me-2" type="submit"><i class="ti ti-activity me-1"></i>' . $escape(__('Run read-only checks')) . '</button>';
-            echo '<a class="btn btn-outline-secondary" href="' . $escape(self::equipmentUrl($root, $id)) . '">' . $escape(__('Cancel')) . '</a>';
+            echo '<button class="btn btn-primary me-2" type="submit"><i class="ti ti-activity me-1"></i>' . $escape(__('Run read-only checks', 'winbox')) . '</button>';
+            echo '<a class="btn btn-outline-secondary" href="' . $escape(self::equipmentUrl($root, $id)) . '">' . $escape(__('Cancel', 'winbox')) . '</a>';
             echo '</form>';
         } else {
-            echo '<p>' . $escape(__('Checks run from the GLPI server to')) . ' <code>' . $escape($result['host']) . '</code>.</p>';
-            echo '<h3>' . $escape(__('RouterOS account policies')) . '</h3>';
+            echo '<p>' . $escape(__('Checks run from the GLPI server to', 'winbox')) . ' <code>' . $escape($result['host']) . '</code>.</p>';
+            echo '<h3>' . $escape(__('RouterOS account policies', 'winbox')) . '</h3>';
             echo '<p>' . $escape($result['policy']['message']) . '</p>';
             echo '<ul class="list-group mb-4">';
-            self::renderStatus($escape, __('SSH account policy'), (string)($result['policy']['statuses']['ssh'] ?? 'unknown'), __('SSH policy and the saved account login check.'), true);
-            self::renderStatus($escape, __('Read'), (string)($result['policy']['statuses']['read'] ?? 'unknown'), __('RouterOS configuration read permission.'), true);
-            self::renderStatus($escape, __('Sensitive'), (string)($result['policy']['statuses']['sensitive'] ?? 'unknown'), __('Permission to view sensitive configuration values.'), true);
-            self::renderStatus($escape, __('FTP account policy'), (string)($result['policy']['statuses']['ftp'] ?? 'unknown'), __('RouterOS account policy required for SFTP file operations; this is separate from the FTP service port.'), true);
-            self::renderStatus($escape, __('Write'), (string)($result['policy']['statuses']['write'] ?? 'unknown'), __('RouterOS configuration write permission. This is inspected from the user group; no write command is sent.'), true);
+            self::renderStatus($escape, __('SSH account policy', 'winbox'), (string)($result['policy']['statuses']['ssh'] ?? 'unknown'), __('SSH policy and the saved account login check.', 'winbox'), true);
+            self::renderStatus($escape, __('Read', 'winbox'), (string)($result['policy']['statuses']['read'] ?? 'unknown'), __('RouterOS configuration read permission.', 'winbox'), true);
+            self::renderStatus($escape, __('Sensitive', 'winbox'), (string)($result['policy']['statuses']['sensitive'] ?? 'unknown'), __('Permission to view sensitive configuration values.', 'winbox'), true);
+            self::renderStatus($escape, __('FTP account policy', 'winbox'), (string)($result['policy']['statuses']['ftp'] ?? 'unknown'), __('RouterOS account policy required for SFTP file operations; this is separate from the FTP service port.', 'winbox'), true);
+            self::renderStatus($escape, __('Write', 'winbox'), (string)($result['policy']['statuses']['write'] ?? 'unknown'), __('RouterOS configuration write permission. This is inspected from the user group; no write command is sent.', 'winbox'), true);
             echo '</ul>';
 
-            echo '<h3>' . $escape(__('RouterOS service reachability')) . '</h3>';
-            echo '<p>' . $escape(__('A reachable port confirms network access from GLPI only; it does not verify service permissions or authenticate to the service.')) . '</p>';
+            echo '<h3>' . $escape(__('RouterOS service reachability', 'winbox')) . '</h3>';
+            echo '<p>' . $escape(__('A reachable port confirms network access from GLPI only; it does not verify service permissions or authenticate to the service.', 'winbox')) . '</p>';
             echo '<ul class="list-group mb-4">';
             foreach ([
-                'ftp' => __('FTP service'),
-                'api' => __('API service'),
-                'api_ssl' => __('API-SSL service'),
-                'www' => __('WWW (HTTP)'),
-                'www_ssl' => __('WWW-SSL (HTTPS)'),
-                'ssh' => __('SSH service'),
+                'ftp' => __('FTP service', 'winbox'),
+                'api' => __('API service', 'winbox'),
+                'api_ssl' => __('API-SSL service', 'winbox'),
+                'www' => __('WWW (HTTP)', 'winbox'),
+                'www_ssl' => __('WWW-SSL (HTTPS)', 'winbox'),
+                'ssh' => __('SSH service', 'winbox'),
             ] as $key => $label) {
                 $service = $result['services'][$key];
                 self::renderStatus(
@@ -150,12 +150,12 @@ final class RouterDiagnosticsController extends AbstractController
                 );
             }
             echo '</ul>';
-            echo '<div class="alert alert-warning">' . $escape(__('Green means the policy was confirmed or the service protocol was reachable. Red means it was explicitly absent or unreachable from GLPI. Amber means the check could not determine the state. An inactive write policy prevents configuration restore; an inactive ftp policy prevents SFTP file transfer.')) . '</div>';
+            echo '<div class="alert alert-warning">' . $escape(__('Green means the policy was confirmed or the service protocol was reachable. Red means it was explicitly absent or unreachable from GLPI. Amber means the check could not determine the state. An inactive write policy prevents configuration restore; an inactive ftp policy prevents SFTP file transfer.', 'winbox')) . '</div>';
             echo '<form method="post" action="' . $escape($root . '/plugins/winbox/RouterDiagnostics') . '">';
             echo '<input type="hidden" name="id" value="' . $id . '">';
             echo '<input type="hidden" name="_glpi_csrf_token" value="' . $escape(Session::getNewCSRFToken()) . '">';
-            echo '<button class="btn btn-outline-primary me-2" type="submit"><i class="ti ti-refresh me-1"></i>' . $escape(__('Run checks again')) . '</button>';
-            echo '<a class="btn btn-outline-secondary" href="' . $escape(self::equipmentUrl($root, $id)) . '">' . $escape(__('Back to Winbox')) . '</a>';
+            echo '<button class="btn btn-outline-primary me-2" type="submit"><i class="ti ti-refresh me-1"></i>' . $escape(__('Run checks again', 'winbox')) . '</button>';
+            echo '<a class="btn btn-outline-secondary" href="' . $escape(self::equipmentUrl($root, $id)) . '">' . $escape(__('Back to Winbox', 'winbox')) . '</a>';
             echo '</form>';
         }
 
@@ -182,14 +182,14 @@ final class RouterDiagnosticsController extends AbstractController
             default => '<i class="ti ti-help-circle text-warning me-1" aria-hidden="true"></i>',
         };
         $status_text = match ($normalized) {
-            'active' => __('Active / reachable'),
-            'inactive' => __('Inactive / unreachable'),
-            default => __('Unknown'),
+            'active' => __('Active / reachable', 'winbox'),
+            'inactive' => __('Inactive / unreachable', 'winbox'),
+            default => __('Unknown', 'winbox'),
         };
         if ($policy && $status === 'inactive') {
-            $status_text = __('Inactive');
+            $status_text = __('Inactive', 'winbox');
         } elseif ($policy && $status === 'active') {
-            $status_text = __('Active');
+            $status_text = __('Active', 'winbox');
         }
         echo '<li class="list-group-item ' . $class . '"><strong>' . $icon . $escape($label) . ' — '
             . $escape($status_text) . '</strong><div>' . $escape($detail) . '</div></li>';

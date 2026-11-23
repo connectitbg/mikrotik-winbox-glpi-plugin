@@ -19,10 +19,6 @@ internal static class SshClientInstaller
     internal const string PlinkUrl = "https://the.earth.li/~sgtatham/putty/0.85/w64/plink.exe";
     internal const string PlinkSha256 = "969f36879d5716aa1a9811f43a6a6510e8f08372dbeb9695b810b9c776f39c75";
 
-    internal const string KittyVersion = "0.76.1.13";
-    internal const string KittyUrl = "https://github.com/cyd01/KiTTY/releases/download/v0.76.1.13/kitty-bin-0.76.1.13.zip";
-    internal const string KittySha256 = "768d93e616c0dd8918c08d317da3857d37a5328daff5c7115b40700913773965";
-
     internal static string InstallIfMissing(string client, string clientRoot)
     {
         string url;
@@ -42,11 +38,6 @@ internal static class SshClientInstaller
             url = PlinkUrl;
             hash = PlinkSha256;
         }
-        else if (client == "kitty")
-        {
-            url = KittyUrl;
-            hash = KittySha256;
-        }
         else
         {
             throw new ArgumentException("Unknown SSH client.", "client");
@@ -58,7 +49,7 @@ internal static class SshClientInstaller
     // Kept separate so the build smoke test can exercise downloads against a local fixture server.
     internal static string InstallFromUrl(string client, string url, string expectedSha256, string clientRoot)
     {
-        if (client != "winbox" && client != "putty" && client != "plink" && client != "kitty")
+        if (client != "winbox" && client != "putty" && client != "plink")
         {
             throw new ArgumentException("Unknown SSH client.", "client");
         }
@@ -79,7 +70,7 @@ internal static class SshClientInstaller
         }
 
         string temporaryFile = Path.Combine(Path.GetTempPath(), "winbox-glpi-client-" + Guid.NewGuid().ToString("N")
-            + ((client == "kitty" || client == "winbox") ? ".zip" : ".exe"));
+            + (client == "winbox" ? ".zip" : ".exe"));
         try
         {
             // Older .NET Framework versions do not enable TLS 1.2 by default.
@@ -110,8 +101,7 @@ internal static class SshClientInstaller
                 return destination;
             }
 
-            if (client == "winbox") return InstallWinboxArchive(temporaryFile, clientRoot);
-            return InstallKittyArchive(temporaryFile, clientRoot);
+            return InstallWinboxArchive(temporaryFile, clientRoot);
         }
         finally
         {
@@ -165,48 +155,6 @@ internal static class SshClientInstaller
             if (matches.Length > 0) return matches[0];
         }
         return null;
-    }
-
-    private static string InstallKittyArchive(string archivePath, string clientRoot)
-    {
-        string destination = Path.Combine(clientRoot, "KiTTY");
-        string staging = Path.Combine(clientRoot, ".kitty-install-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(staging);
-        try
-        {
-            ExtractZipSafely(archivePath, staging);
-            string[] uncompressed = Directory.GetFiles(staging, "kitty_nocompress.exe", SearchOption.AllDirectories);
-            string[] regular = Directory.GetFiles(staging, "kitty.exe", SearchOption.AllDirectories);
-            string selected = uncompressed.Length > 0 ? uncompressed[0] : (regular.Length > 0 ? regular[0] : null);
-            if (selected == null)
-            {
-                throw new InvalidOperationException("The verified KiTTY archive does not contain kitty.exe.");
-            }
-
-            string stagedExecutable = Path.Combine(staging, "kitty.exe");
-            if (!String.Equals(Path.GetFullPath(selected), Path.GetFullPath(stagedExecutable), StringComparison.OrdinalIgnoreCase))
-            {
-                File.Copy(selected, stagedExecutable, true);
-            }
-            if (Directory.Exists(destination))
-            {
-                throw new IOException("An existing KiTTY install directory was left unchanged.");
-            }
-            Directory.Move(staging, destination);
-            return Path.Combine(destination, "kitty.exe");
-        }
-        catch
-        {
-            try
-            {
-                if (Directory.Exists(staging)) Directory.Delete(staging, true);
-            }
-            catch
-            {
-                // Keep the original extraction failure as the useful error.
-            }
-            throw;
-        }
     }
 
     private static void ExtractZipSafely(string archivePath, string destinationRoot)
@@ -277,7 +225,6 @@ internal static class SshClientInstaller
     private static string ClientName(string client)
     {
         if (client == "winbox") return "WinBox";
-        if (client == "kitty") return "KiTTY";
         return client == "plink" ? "Plink" : "PuTTY";
     }
 

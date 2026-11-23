@@ -20,7 +20,7 @@ final class RedeemSshController extends AbstractController
         $payload = json_decode($request->getContent(), true);
         $token = is_array($payload) ? (string)($payload['token'] ?? '') : '';
         $client = is_array($payload) ? (string)($payload['client'] ?? '') : '';
-        if (!preg_match('/^[a-f0-9]{64}$/', $token) || !in_array($client, ['putty', 'kitty', 'sshdiag'], true)) {
+        if (!preg_match('/^[a-f0-9]{64}$/', $token) || !in_array($client, ['putty', 'sshdiag'], true)) {
             return new JsonResponse(['error' => 'Invalid SSH launch request'], 400, ['Cache-Control' => 'no-store']);
         }
 
@@ -59,7 +59,7 @@ final class RedeemSshController extends AbstractController
             return new JsonResponse(['error' => 'SSH connection details are unavailable'], 404, ['Cache-Control' => 'no-store']);
         }
 
-        $password = (string)($credential['password'] ?? '');
+        $password = \GlpiPlugin\Winbox\Service\Access::decryptPassword((string)($credential['password'] ?? ''));
         \GlpiPlugin\Winbox\Service\AccessLog::recordSshTest($item_id, $client, 'credentials_released', [
             'target' => \GlpiPlugin\Winbox\Service\Access::sshHost($credential) . ':' . (string)$credential['ssh_port'],
             'username_present' => trim((string)$credential['username']) !== '',

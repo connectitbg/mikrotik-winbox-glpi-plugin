@@ -27,7 +27,7 @@ final class SshTrustController extends AbstractController
         $equipment = self::getEditableEquipment($id);
         $credentials = Access::credentials($DB, $id);
         if (!$credentials) {
-            return self::redirectWithMessage($equipment, __('Configure the Winbox connection before verifying SSH.'), ERROR);
+            return self::redirectWithMessage($equipment, __('Configure the Winbox connection before verifying SSH.', 'winbox'), ERROR);
         }
 
         $current_keys = [];
@@ -40,16 +40,31 @@ final class SshTrustController extends AbstractController
 
         if ($request->isMethod('POST')) {
             if (!$request->request->getBoolean('confirm_fingerprint') || $current_keys === []) {
-                return self::redirectWithMessage($equipment, $scan_error !== '' ? $scan_error : __('Confirm the SSH host-key fingerprints before trusting them.'), ERROR);
+                return self::redirectWithMessage($equipment, $scan_error !== '' ? $scan_error : __('Confirm the SSH host-key fingerprints before trusting them.', 'winbox'), ERROR);
+            }
+
+            $submitted = json_decode($request->request->getString('expected_fingerprints'), true);
+            $submitted_fingerprints = is_array($submitted)
+                ? array_values(array_filter($submitted, static fn($value): bool => is_string($value) && $value !== ''))
+                : [];
+            $fresh_fingerprints = array_column($current_keys, 'fingerprint');
+            sort($submitted_fingerprints, SORT_STRING);
+            sort($fresh_fingerprints, SORT_STRING);
+            if ($submitted_fingerprints === [] || $submitted_fingerprints !== $fresh_fingerprints) {
+                return self::redirectWithMessage(
+                    $equipment,
+                    __('The router fingerprints changed since they were displayed. Review the new values before pinning them.', 'winbox'),
+                    ERROR
+                );
             }
 
             $encoded = json_encode($current_keys, JSON_UNESCAPED_SLASHES);
             if ($encoded === false || !$DB->update('glpi_plugin_winbox_credentials', [
                 'ssh_host_keys' => $encoded,
             ], ['item_id' => $id])) {
-                return self::redirectWithMessage($equipment, __('Unable to save the verified SSH host keys.'), ERROR);
+                return self::redirectWithMessage($equipment, __('Unable to save the verified SSH host keys.', 'winbox'), ERROR);
             }
-            return self::redirectWithMessage($equipment, __('Router SSH server fingerprints were pinned for this device.'), INFO);
+            return self::redirectWithMessage($equipment, __('Router SSH server fingerprints were pinned for this device.', 'winbox'), INFO);
         }
 
         $trusted = json_decode((string)($credentials['ssh_host_keys'] ?? ''), true);
@@ -63,39 +78,40 @@ final class SshTrustController extends AbstractController
         $root = rtrim((string)($CFG_GLPI['root_doc'] ?? ''), '/');
         $escape = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         ob_start();
-        \Html::header(__('Verify MikroTik SSH server fingerprint'), $_SERVER['PHP_SELF'], 'assets', 'networkequipment');
+        \Html::header(__('Verify MikroTik SSH server fingerprint', 'winbox'), $_SERVER['PHP_SELF'], 'assets', 'networkequipment');
         echo '<div class="container-fluid p-3"><div class="card"><div class="card-header"><h2>'
-            . $escape(__('Verify router SSH fingerprint')) . ' — ' . $escape($equipment->fields['name'])
+            . $escape(__('Verify router SSH fingerprint', 'winbox')) . ' — ' . $escape($equipment->fields['name'])
             . '</h2></div><div class="card-body">';
-        echo '<p>' . $escape(__('SSH endpoint')) . ': <code>'
+        echo '<p>' . $escape(__('SSH endpoint', 'winbox')) . ': <code>'
             . $escape(Access::sshHost($credentials) . ':' . $credentials['ssh_port']) . '</code></p>';
 
         if ($scan_error !== '') {
             echo '<div class="alert alert-danger">' . $escape($scan_error) . '</div>';
         }
-        echo '<div class="alert alert-warning">' . $escape(__('This verifies the router server identity; it does not choose how GLPI logs in. Compare the fingerprint with a trusted record before pinning it. A changed fingerprint may indicate a router replacement or a security problem.')) . '</div>';
+        echo '<div class="alert alert-warning">' . $escape(__('This verifies the router server identity; it does not choose how GLPI logs in. Compare the fingerprint with a trusted record before pinning it. A changed fingerprint may indicate a router replacement or a security problem.', 'winbox')) . '</div>';
 
         if ($current_keys !== []) {
-            echo '<h3>' . $escape(__('SSH server fingerprints offered by this endpoint')) . '</h3><ul>';
+            echo '<h3>' . $escape(__('SSH server fingerprints offered by this endpoint', 'winbox')) . '</h3><ul>';
             foreach ($current_keys as $key) {
                 echo '<li><code>' . $escape($key['type']) . '</code> — <code>' . $escape($key['fingerprint']) . '</code></li>';
             }
             echo '</ul>';
             if ($matches) {
-                echo '<div class="alert alert-success">' . $escape(__('These router SSH server fingerprints match the pinned values.')) . '</div>';
+                echo '<div class="alert alert-success">' . $escape(__('These router SSH server fingerprints match the pinned values.', 'winbox')) . '</div>';
             } elseif ($trusted_fingerprints !== []) {
-                echo '<div class="alert alert-danger">' . $escape(__('The router SSH server fingerprints differ from the pinned values. Verify them out of band before replacing the pins.')) . '</div>';
+                echo '<div class="alert alert-danger">' . $escape(__('The router SSH server fingerprints differ from the pinned values. Verify them out of band before replacing the pins.', 'winbox')) . '</div>';
             }
 
             echo '<form method="post" action="' . $escape($root . '/plugins/winbox/SshTrust') . '">';
             echo '<input type="hidden" name="id" value="' . $id . '">';
             echo '<input type="hidden" name="_glpi_csrf_token" value="' . $escape(Session::getNewCSRFToken()) . '">';
+            echo '<input type="hidden" name="expected_fingerprints" value="' . $escape(json_encode($current_fingerprints, JSON_UNESCAPED_SLASHES) ?: '[]') . '">';
             echo '<div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="winbox_ssh_confirm" name="confirm_fingerprint" value="1" required>';
-            echo '<label class="form-check-label" for="winbox_ssh_confirm">' . $escape(__('I verified these fingerprints against a trusted source and want to pin this router identity.')) . '</label></div>';
-            echo '<button class="btn btn-warning me-2" type="submit"><i class="ti ti-shield-check me-1"></i>' . $escape(__('Pin router SSH fingerprint')) . '</button>';
+            echo '<label class="form-check-label" for="winbox_ssh_confirm">' . $escape(__('I verified these fingerprints against a trusted source and want to pin this router identity.', 'winbox')) . '</label></div>';
+            echo '<button class="btn btn-warning me-2" type="submit"><i class="ti ti-shield-check me-1"></i>' . $escape(__('Pin router SSH fingerprint', 'winbox')) . '</button>';
         }
 
-        echo '<a class="btn btn-outline-secondary" href="' . $escape($root . '/front/networkequipment.form.php?id=' . $id . '&forcetab=GlpiPlugin%5CWinbox%5CWinboxTab%241') . '">' . $escape(__('Back to Winbox')) . '</a>';
+        echo '<a class="btn btn-outline-secondary" href="' . $escape($root . '/front/networkequipment.form.php?id=' . $id . '&forcetab=GlpiPlugin%5CWinbox%5CWinboxTab%241') . '">' . $escape(__('Back to Winbox', 'winbox')) . '</a>';
         if ($current_keys !== []) {
             echo '</form>';
         }

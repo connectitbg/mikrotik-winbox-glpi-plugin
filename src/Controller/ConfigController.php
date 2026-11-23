@@ -57,39 +57,44 @@ final class ConfigController extends AbstractController
 
             $message = '';
             if (!$valid_host || $port < 1 || $port > 65535 || !$valid_api_host || $api_port < 1 || $api_port > 65535 || !$valid_service_ports || !$valid_ssh_host || $ssh_port < 1 || $ssh_port > 65535 || !in_array($ssh_auth_method, ['password', 'key_then_password'], true) || $username === '') {
-                $message = __('Enter valid Winbox, REST API, SSH, and RouterOS service ports, valid hosts, and a username.');
+                $message = __('Enter valid Winbox, REST API, SSH, and RouterOS service ports, valid hosts, and a username.', 'winbox');
             } else {
                 $existing = \GlpiPlugin\Winbox\Service\Access::credentials($DB, $id);
-                if ($password === '' && $existing) {
-                    $password = (string)$existing['password'];
-                }
-                $values = [
-                    'item_id' => $id,
-                    'ip_address' => $ip,
-                    'port' => $port,
-                    'api_host' => $api_host !== '' ? $api_host : null,
-                    'api_port' => $api_port,
-                    'ftp_port' => $ftp_port,
-                    'routeros_api_port' => $routeros_api_port,
-                    'routeros_api_ssl_port' => $routeros_api_ssl_port,
-                    'www_port' => $www_port,
-                    'www_ssl_port' => $www_ssl_port,
-                    'ssh_host' => $ssh_host !== '' ? $ssh_host : null,
-                    'ssh_port' => $ssh_port,
-                    'ssh_auth_method' => $ssh_auth_method,
-                    'username' => $username,
-                    'password' => $password,
-                ];
-                $saved = $existing
-                    ? $DB->update('glpi_plugin_winbox_credentials', $values, ['item_id' => $id])
-                    : $DB->insert('glpi_plugin_winbox_credentials', $values);
-                if (!$saved) {
-                    $message = __('Unable to save Winbox connection settings.');
+                try {
+                    if ($password === '' && $existing) {
+                        $password = \GlpiPlugin\Winbox\Service\Access::decryptPassword((string)$existing['password']);
+                    }
+                    $stored_password = \GlpiPlugin\Winbox\Service\Access::encryptPassword($password);
+                    $values = [
+                        'item_id' => $id,
+                        'ip_address' => $ip,
+                        'port' => $port,
+                        'api_host' => $api_host !== '' ? $api_host : null,
+                        'api_port' => $api_port,
+                        'ftp_port' => $ftp_port,
+                        'routeros_api_port' => $routeros_api_port,
+                        'routeros_api_ssl_port' => $routeros_api_ssl_port,
+                        'www_port' => $www_port,
+                        'www_ssl_port' => $www_ssl_port,
+                        'ssh_host' => $ssh_host !== '' ? $ssh_host : null,
+                        'ssh_port' => $ssh_port,
+                        'ssh_auth_method' => $ssh_auth_method,
+                        'username' => $username,
+                        'password' => $stored_password,
+                    ];
+                    $saved = $existing
+                        ? $DB->update('glpi_plugin_winbox_credentials', $values, ['item_id' => $id])
+                        : $DB->insert('glpi_plugin_winbox_credentials', $values);
+                    if (!$saved) {
+                        $message = __('Unable to save Winbox connection settings.', 'winbox');
+                    }
+                } catch (\Throwable) {
+                    $message = __('Unable to encrypt the router password. Check that the GLPI security key exists and is readable.', 'winbox');
                 }
             }
 
             if ($message === '') {
-                \Session::addMessageAfterRedirect(htmlspecialchars(__('Winbox connection settings were saved.'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false, INFO);
+                \Session::addMessageAfterRedirect(htmlspecialchars(__('Winbox connection settings were saved.', 'winbox'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false, INFO);
             } else {
                 \Session::addMessageAfterRedirect(htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false, ERROR);
             }
@@ -98,12 +103,12 @@ final class ConfigController extends AbstractController
         }
 
         $html = '<div class="container-fluid"><div class="card m-3"><div class="card-header"><h2>MikroTik Tools for GLPI</h2></div><div class="card-body">';
-        $html .= '<p>' . htmlspecialchars(__('Connection settings are entered on each network device in its Winbox tab.'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
-        $html .= '<p><a class="btn btn-primary" href="' . htmlspecialchars($root . '/front/networkequipment.php', ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars(__('Open network devices'), ENT_QUOTES, 'UTF-8') . '</a></p>';
-        $html .= '<p><a target="_blank" rel="noopener noreferrer" href="' . htmlspecialchars($root . '/plugins/winbox/InstallClient', ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars(__('Client setup files and instructions'), ENT_QUOTES, 'UTF-8') . '</a></p>';
+        $html .= '<p>' . htmlspecialchars(__('Connection settings are entered on each network device in its Winbox tab.', 'winbox'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
+        $html .= '<p><a class="btn btn-primary" href="' . htmlspecialchars($root . '/front/networkequipment.php', ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars(__('Open network devices', 'winbox'), ENT_QUOTES, 'UTF-8') . '</a></p>';
+        $html .= '<p><a target="_blank" rel="noopener noreferrer" href="' . htmlspecialchars($root . '/plugins/winbox/InstallClient', ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars(__('Client setup files and instructions', 'winbox'), ENT_QUOTES, 'UTF-8') . '</a></p>';
         $html .= '</div></div></div>';
         ob_start();
-        \Html::header(__('MikroTik Tools for GLPI'), $_SERVER['PHP_SELF'], 'config', 'plugins');
+        \Html::header(__('MikroTik Tools for GLPI', 'winbox'), $_SERVER['PHP_SELF'], 'config', 'plugins');
         echo $html;
         \Html::footer();
         return new Response((string)ob_get_clean());

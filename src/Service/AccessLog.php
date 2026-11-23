@@ -128,10 +128,10 @@ final class AccessLog
         @file_put_contents(GLPI_LOG_DIR . '/mikrotik_access.log', $line, FILE_APPEND | LOCK_EX);
     }
 
-    /** Temporary, secret-safe PuTTY/KiTTY diagnostics. Remove after the SSH test pass. */
+    /** Secret-safe PuTTY diagnostics; never include credentials or router output. */
     public static function recordSshTest(int $item_id, string $client, string $stage, array $details = []): void
     {
-        if (!defined('GLPI_LOG_DIR') || $item_id < 1 || !in_array($client, ['putty', 'kitty', 'sshdiag'], true)) {
+        if (!defined('GLPI_LOG_DIR') || $item_id < 1 || !in_array($client, ['putty', 'sshdiag'], true)) {
             return;
         }
 

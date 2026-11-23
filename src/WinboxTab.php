@@ -14,7 +14,7 @@ final class WinboxTab extends \CommonGLPI
             return '';
         }
 
-        return self::createTabEntry(__('Winbox'), 0, NetworkEquipment::class, 'ti ti-router');
+        return self::createTabEntry(__('Winbox', 'winbox'), 0, NetworkEquipment::class, 'ti ti-router');
     }
 
     public static function displayTabContentForItem(CommonGLPI $item, $tabnum = 1, $withtemplate = 0): bool
@@ -27,12 +27,11 @@ final class WinboxTab extends \CommonGLPI
         $id = (int)$item->getID();
         $root = rtrim((string)($CFG_GLPI['root_doc'] ?? ''), '/');
         $credentials = \GlpiPlugin\Winbox\Service\Access::credentials($DB, $id);
-        $can_configure = Session::haveRight('config', UPDATE) && $item->can($id, UPDATE);
-        $launch_url = $root . '/plugins/winbox/Launch?id=' . $id;
+        $can_configure = \GlpiPlugin\Winbox\Service\Access::canLaunchEquipment($id);
+        $launch_url = $root . '/plugins/winbox/Launch';
         $webfig_url = $root . '/plugins/winbox/OpenWebFig?id=' . $id;
-        $putty_url = $root . '/plugins/winbox/SshLaunch?id=' . $id . '&client=putty';
-        $kitty_url = $root . '/plugins/winbox/SshLaunch?id=' . $id . '&client=kitty';
-        $ssh_diagnostic_url = $root . '/plugins/winbox/SshLaunch?id=' . $id . '&client=sshdiag';
+        $ssh_launch_url = $root . '/plugins/winbox/SshLaunch';
+        $ssh_diagnostic_url = $root . '/plugins/winbox/SshLaunch';
         $access_log_url = $root . '/plugins/winbox/AccessLog?id=' . $id;
         $export_url = $root . '/plugins/winbox/ConfigExport?id=' . $id;
         $import_url = $root . '/plugins/winbox/ConfigImport?id=' . $id;
@@ -46,45 +45,46 @@ final class WinboxTab extends \CommonGLPI
         $save_url = $root . '/plugins/winbox/Config';
         $escape = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
-        echo '<div class="container-fluid p-3"><div class="card"><div class="card-header"><h2>' . $escape(__('Winbox connection')) . ' — ' . $escape((string)$item->fields['name']) . '</h2></div><div class="card-body">';
+        echo '<div class="container-fluid p-3"><div class="card"><div class="card-header"><h2>' . $escape(__('Winbox connection', 'winbox')) . ' — ' . $escape((string)$item->fields['name']) . '</h2></div><div class="card-body">';
 
-        if ($credentials) {
-            echo '<p>' . $escape(__('Configured target')) . ': <code>' . $escape($credentials['ip_address'] . ':' . $credentials['port']) . '</code></p>';
-            echo '<p>' . $escape(__('SSH target')) . ': <code>' . $escape(\GlpiPlugin\Winbox\Service\Access::sshHost($credentials) . ':' . $credentials['ssh_port']) . '</code></p>';
+        if ($credentials && $can_configure) {
+            echo '<p>' . $escape(__('Configured target', 'winbox')) . ': <code>' . $escape($credentials['ip_address'] . ':' . $credentials['port']) . '</code></p>';
+            echo '<p>' . $escape(__('SSH target', 'winbox')) . ': <code>' . $escape(\GlpiPlugin\Winbox\Service\Access::sshHost($credentials) . ':' . $credentials['ssh_port']) . '</code></p>';
+        } elseif ($credentials) {
+            echo '<p class="text-muted">' . $escape(__('Router access is restricted to users with configuration update rights and update access to this device.', 'winbox')) . '</p>';
         } else {
-            echo '<p class="text-muted">' . $escape(__('No Winbox connection is configured for this device yet.')) . '</p>';
+            echo '<p class="text-muted">' . $escape(__('No Winbox connection is configured for this device yet.', 'winbox')) . '</p>';
         }
 
-        echo '<section class="mb-4"><h3 class="h5">' . $escape(__('Access')) . '</h3>';
+        echo '<section class="mb-4"><h3 class="h5">' . $escape(__('Access', 'winbox')) . '</h3>';
         echo '<div class="d-flex gap-2 flex-wrap">';
-        if ($credentials) {
-            echo '<a class="btn btn-primary" href="' . $escape($launch_url) . '"><i class="ti ti-login me-1"></i>' . $escape(__('Open in Winbox')) . '</a>';
-            echo '<a class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer" href="' . $escape($webfig_url) . '"><i class="ti ti-world me-1"></i>' . $escape(__('Open WebFig (HTTPS preferred)')) . '</a>';
-            echo '<a class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer" href="' . $escape($putty_url) . '"><i class="ti ti-terminal-2 me-1"></i>' . $escape(__('Open SSH in PuTTY')) . '</a>';
-            echo '<a class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer" href="' . $escape($kitty_url) . '"><i class="ti ti-terminal-2 me-1"></i>' . $escape(__('Open SSH in KiTTY')) . '</a>';
+        if ($credentials && $can_configure) {
+            self::launchButton($launch_url, $id, null, 'btn btn-primary', 'ti ti-login', __('Open in Winbox', 'winbox'));
+            echo '<a class="btn btn-outline-primary" target="_blank" rel="noopener noreferrer" href="' . $escape($webfig_url) . '"><i class="ti ti-world me-1"></i>' . $escape(__('Open WebFig (HTTPS preferred)', 'winbox')) . '</a>';
+            self::launchButton($ssh_launch_url, $id, 'putty', 'btn btn-outline-primary', 'ti ti-terminal-2', __('Open SSH in PuTTY', 'winbox'));
         }
         if ($can_view_access_log) {
-            echo '<a class="btn btn-outline-secondary" href="' . $escape($access_log_url) . '"><i class="ti ti-list-details me-1"></i>' . $escape(__('Access log')) . '</a>';
+            echo '<a class="btn btn-outline-secondary" href="' . $escape($access_log_url) . '"><i class="ti ti-list-details me-1"></i>' . $escape(__('Access log', 'winbox')) . '</a>';
         }
         if ($credentials && $can_configure) {
-            echo '</div></section><hr><section class="mb-4"><h3 class="h5">' . $escape(__('Diagnostics')) . '</h3>';
+            echo '</div></section><hr><section class="mb-4"><h3 class="h5">' . $escape(__('Diagnostics', 'winbox')) . '</h3>';
             echo '<div class="d-flex gap-2 flex-wrap">';
             $trusted_ssh_keys = json_decode((string)($credentials['ssh_host_keys'] ?? ''), true);
             $ssh_key_trusted = is_array($trusted_ssh_keys) && $trusted_ssh_keys !== [];
             echo '<div class="w-100 small mb-1"><span class="badge ' . ($ssh_key_trusted ? 'bg-success' : 'bg-warning text-dark') . '">'
-                . $escape($ssh_key_trusted ? __('Router SSH fingerprint pinned') : __('Router SSH fingerprint not pinned'))
+                . $escape($ssh_key_trusted ? __('Router SSH fingerprint pinned', 'winbox') : __('Router SSH fingerprint not pinned', 'winbox'))
                 . '</span></div>';
-            echo '<a class="btn btn-outline-warning" target="_blank" rel="noopener noreferrer" href="' . $escape($ssh_diagnostic_url) . '"><i class="ti ti-stethoscope me-1"></i>' . $escape(__('Test SSH login')) . '</a>';
-            echo '<a class="btn btn-outline-warning" href="' . $escape($sensitive_restore_diagnostic_url) . '"><i class="ti ti-stethoscope me-1"></i>' . $escape(__('Diagnose restore upload')) . '</a>';
-            echo '<a class="btn btn-outline-warning" href="' . $escape($router_diagnostics_url) . '"><i class="ti ti-activity me-1"></i>' . $escape(__('Check RouterOS functions')) . '</a>';
-            echo '<a class="btn btn-outline-warning" href="' . $escape($ssh_setup_url) . '"><i class="ti ti-terminal-2 me-1"></i>' . $escape(__('SSH setup commands')) . '</a>';
-            echo '<a class="btn btn-outline-warning" href="' . $escape($ssh_trust_url) . '"><i class="ti ti-shield-check me-1"></i>' . $escape(__('Verify router SSH fingerprint')) . '</a>';
-            echo '</div></section><hr><section class="mb-4"><h3 class="h5">' . $escape(__('Backups')) . '</h3>';
+            self::launchButton($ssh_diagnostic_url, $id, 'sshdiag', 'btn btn-outline-warning', 'ti ti-stethoscope', __('Test SSH login', 'winbox'));
+            echo '<a class="btn btn-outline-warning" href="' . $escape($sensitive_restore_diagnostic_url) . '"><i class="ti ti-stethoscope me-1"></i>' . $escape(__('Diagnose restore upload', 'winbox')) . '</a>';
+            echo '<a class="btn btn-outline-warning" href="' . $escape($router_diagnostics_url) . '"><i class="ti ti-activity me-1"></i>' . $escape(__('Check RouterOS functions', 'winbox')) . '</a>';
+            echo '<a class="btn btn-outline-warning" href="' . $escape($ssh_setup_url) . '"><i class="ti ti-terminal-2 me-1"></i>' . $escape(__('SSH setup commands', 'winbox')) . '</a>';
+            echo '<a class="btn btn-outline-warning" href="' . $escape($ssh_trust_url) . '"><i class="ti ti-shield-check me-1"></i>' . $escape(__('Verify router SSH fingerprint', 'winbox')) . '</a>';
+            echo '</div></section><hr><section class="mb-4"><h3 class="h5">' . $escape(__('Backups', 'winbox')) . '</h3>';
             echo '<div class="d-flex gap-2 flex-wrap">';
-            echo '<a class="btn btn-outline-danger" href="' . $escape($export_url) . '"><i class="ti ti-download me-1"></i>' . $escape(__('Download masked .rsc export')) . '</a>';
-            echo '<a class="btn btn-outline-danger" href="' . $escape($import_url) . '"><i class="ti ti-upload me-1"></i>' . $escape(__('Import .rsc backup')) . '</a>';
-            echo '<a class="btn btn-outline-danger" href="' . $escape($sensitive_export_url) . '"><i class="ti ti-file-download me-1"></i>' . $escape(__('Download text backup with sensitive values (SSH)')) . '</a>';
-            echo '<a class="btn btn-outline-danger" href="' . $escape($sensitive_import_url) . '"><i class="ti ti-file-upload me-1"></i>' . $escape(__('Restore text backup with sensitive values (SSH)')) . '</a>';
+            echo '<a class="btn btn-outline-danger" href="' . $escape($export_url) . '"><i class="ti ti-download me-1"></i>' . $escape(__('Download masked .rsc export', 'winbox')) . '</a>';
+            echo '<a class="btn btn-outline-danger" href="' . $escape($import_url) . '"><i class="ti ti-upload me-1"></i>' . $escape(__('Import .rsc backup', 'winbox')) . '</a>';
+            echo '<a class="btn btn-outline-danger" href="' . $escape($sensitive_export_url) . '"><i class="ti ti-file-download me-1"></i>' . $escape(__('Download text backup with sensitive values (SSH)', 'winbox')) . '</a>';
+            echo '<a class="btn btn-outline-danger" href="' . $escape($sensitive_import_url) . '"><i class="ti ti-file-upload me-1"></i>' . $escape(__('Restore text backup with sensitive values (SSH)', 'winbox')) . '</a>';
             echo '</div>';
         } else {
             echo '</div>';
@@ -92,32 +92,32 @@ final class WinboxTab extends \CommonGLPI
         echo '</section>';
 
         if ($can_configure) {
-            echo '<hr><h3>' . $escape(__('Connection details')) . '</h3>';
+            echo '<hr><h3>' . $escape(__('Connection details', 'winbox')) . '</h3>';
             echo '<form method="post" action="' . $escape($save_url) . '">';
             echo '<input type="hidden" name="id" value="' . $id . '">';
             echo '<input type="hidden" name="_glpi_csrf_token" value="' . $escape(Session::getNewCSRFToken()) . '">';
-            self::field('ip_address', __('IP address / hostname'), (string)($credentials['ip_address'] ?? ''), 'text', true);
-            self::field('port', __('Winbox port'), (string)($credentials['port'] ?? '8291'), 'number', true, 'min="1" max="65535"');
-            self::field('api_host', __('RouterOS HTTPS hostname (REST API / WebFig certificate)'), (string)($credentials['api_host'] ?? ''), 'text', false, 'placeholder="Leave blank to use the IP address / hostname above"');
-            self::field('api_port', __('RouterOS REST API HTTPS port (www-ssl)'), (string)($credentials['api_port'] ?? '443'), 'number', true, 'min="1" max="65535"');
-            self::field('ssh_host', __('SSH host / IP'), (string)($credentials['ssh_host'] ?? ''), 'text', false, 'placeholder="Leave blank to use the Winbox address"');
-            self::field('ssh_port', __('RouterOS SSH port'), (string)($credentials['ssh_port'] ?? '22'), 'number', true, 'min="1" max="65535"');
-            echo '<hr><h4>' . $escape(__('RouterOS service ports')) . '</h4>';
-            echo '<p class="text-muted">' . $escape(__('These ports are checked from the GLPI server. The FTP service port is separate from SFTP: text restore transfers files over the SSH port and requires the RouterOS ftp policy.')) . '</p>';
-            self::field('ftp_port', __('RouterOS FTP service port'), (string)($credentials['ftp_port'] ?? '21'), 'number', true, 'min="1" max="65535"');
-            echo '<div class="form-text mb-3">' . $escape(__('This is the FTP network service port. The ftp account policy is checked separately; SFTP backup and restore use the SSH port above.')) . '</div>';
-            self::field('routeros_api_port', __('RouterOS API port'), (string)($credentials['routeros_api_port'] ?? '8728'), 'number', true, 'min="1" max="65535"');
-            self::field('routeros_api_ssl_port', __('RouterOS API-SSL port'), (string)($credentials['routeros_api_ssl_port'] ?? '8729'), 'number', true, 'min="1" max="65535"');
-            self::field('www_port', __('RouterOS WWW (HTTP) port'), (string)($credentials['www_port'] ?? '80'), 'number', true, 'min="1" max="65535"');
-            self::field('www_ssl_port', __('RouterOS WWW-SSL (HTTPS) port'), (string)($credentials['www_ssl_port'] ?? '443'), 'number', true, 'min="1" max="65535"');
+            self::field('ip_address', __('IP address / hostname', 'winbox'), (string)($credentials['ip_address'] ?? ''), 'text', true);
+            self::field('port', __('Winbox port', 'winbox'), (string)($credentials['port'] ?? '8291'), 'number', true, 'min="1" max="65535"');
+            self::field('api_host', __('RouterOS HTTPS hostname (REST API / WebFig certificate)', 'winbox'), (string)($credentials['api_host'] ?? ''), 'text', false, 'placeholder="Leave blank to use the IP address / hostname above"');
+            self::field('api_port', __('RouterOS REST API HTTPS port (www-ssl)', 'winbox'), (string)($credentials['api_port'] ?? '443'), 'number', true, 'min="1" max="65535"');
+            self::field('ssh_host', __('SSH host / IP', 'winbox'), (string)($credentials['ssh_host'] ?? ''), 'text', false, 'placeholder="Leave blank to use the Winbox address"');
+            self::field('ssh_port', __('RouterOS SSH port', 'winbox'), (string)($credentials['ssh_port'] ?? '22'), 'number', true, 'min="1" max="65535"');
+            echo '<hr><h4>' . $escape(__('RouterOS service ports', 'winbox')) . '</h4>';
+            echo '<p class="text-muted">' . $escape(__('These ports are checked from the GLPI server. The FTP service port is separate from SFTP: text restore transfers files over the SSH port and requires the RouterOS ftp policy.', 'winbox')) . '</p>';
+            self::field('ftp_port', __('RouterOS FTP service port', 'winbox'), (string)($credentials['ftp_port'] ?? '21'), 'number', true, 'min="1" max="65535"');
+            echo '<div class="form-text mb-3">' . $escape(__('This is the FTP network service port. The ftp account policy is checked separately; SFTP backup and restore use the SSH port above.', 'winbox')) . '</div>';
+            self::field('routeros_api_port', __('RouterOS API port', 'winbox'), (string)($credentials['routeros_api_port'] ?? '8728'), 'number', true, 'min="1" max="65535"');
+            self::field('routeros_api_ssl_port', __('RouterOS API-SSL port', 'winbox'), (string)($credentials['routeros_api_ssl_port'] ?? '8729'), 'number', true, 'min="1" max="65535"');
+            self::field('www_port', __('RouterOS WWW (HTTP) port', 'winbox'), (string)($credentials['www_port'] ?? '80'), 'number', true, 'min="1" max="65535"');
+            self::field('www_ssl_port', __('RouterOS WWW-SSL (HTTPS) port', 'winbox'), (string)($credentials['www_ssl_port'] ?? '443'), 'number', true, 'min="1" max="65535"');
             self::sshAuthMethod((string)($credentials['ssh_auth_method'] ?? 'password'));
-            self::field('username', __('User'), (string)($credentials['username'] ?? ''), 'text', true);
-            self::field('password', __('Password'), (string)($credentials['password'] ?? ''), 'text', false, 'autocomplete="off"');
-            echo '<div class="form-text mb-3">' . $escape(__('Leave the password unchanged to keep the saved value. Only users with configuration rights and update access to this device can see or change it. SSH uses username/password by default; optional key mode tries an OpenSSH identity for the GLPI web service account, then falls back to the password. Use an unencrypted, permission-protected identity or an unlocked SSH agent. The router SSH fingerprint check verifies server identity, not the login method. Masked .rsc actions require RouterOS REST over verified HTTPS. SSH text backup requires SSH/SFTP reachable from GLPI and a pinned router fingerprint; export needs the RouterOS sensitive policy. Restore needs the read, write, and ftp policies. Sensitive values in the text backup are plaintext. Import dry-run requires RouterOS v7.16 or later.')) . '</div>';
-            echo '<button class="btn btn-success" type="submit"><i class="ti ti-device-floppy me-1"></i>' . $escape(__('Save Winbox settings')) . '</button>';
+            self::field('username', __('User', 'winbox'), (string)($credentials['username'] ?? ''), 'text', true);
+            self::field('password', __('Password', 'winbox'), '', 'password', false, 'autocomplete="new-password"');
+            echo '<div class="form-text mb-3">' . $escape(__('The password is encrypted with the GLPI security key in the database. Leave this field blank to keep the saved password. Users allowed to launch a client necessarily receive the password on their workstation. Only users with configuration rights and update access to this device can view or change it. SSH uses username/password by default; optional key mode tries an OpenSSH identity for the GLPI web service account, then falls back to the password. Use an unencrypted, permission-protected identity or an unlocked SSH agent. The router SSH fingerprint check verifies server identity, not the login method. Masked .rsc actions require RouterOS REST over verified HTTPS. SSH text backup requires SSH/SFTP reachable from GLPI and a pinned router fingerprint; export needs the RouterOS sensitive policy. Restore needs the read, write, and ftp policies. Sensitive values in the text backup are plaintext. Import dry-run requires RouterOS v7.16 or later.', 'winbox')) . '</div>';
+            echo '<button class="btn btn-success" type="submit"><i class="ti ti-device-floppy me-1"></i>' . $escape(__('Save Winbox settings', 'winbox')) . '</button>';
             echo '</form>';
         } else {
-            echo '<hr><p class="text-muted">' . $escape(__('Connection credentials are hidden. Ask a GLPI administrator to configure them.')) . '</p>';
+            echo '<hr><p class="text-muted">' . $escape(__('Connection credentials are hidden. Ask a GLPI administrator to configure them.', 'winbox')) . '</p>';
         }
 
         echo '</div></div></div>';
@@ -131,6 +131,25 @@ final class WinboxTab extends \CommonGLPI
         echo '<div class="col-sm-6"><input class="form-control" id="winbox_' . $escape($name) . '" name="' . $escape($name) . '" type="' . $escape($type) . '" value="' . $escape($value) . '"' . ($required ? ' required' : '') . ' ' . $extra . '></div></div>';
     }
 
+    private static function launchButton(
+        string $action,
+        int $id,
+        ?string $client,
+        string $class,
+        string $icon,
+        string $label
+    ): void {
+        $escape = static fn($value): string => htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        echo '<form class="d-inline" method="post" target="_blank" action="' . $escape($action) . '">';
+        echo '<input type="hidden" name="id" value="' . $id . '">';
+        echo '<input type="hidden" name="_glpi_csrf_token" value="' . $escape(Session::getNewCSRFToken()) . '">';
+        if ($client !== null) {
+            echo '<input type="hidden" name="client" value="' . $escape($client) . '">';
+        }
+        echo '<button class="' . $escape($class) . '" type="submit"><i class="' . $escape($icon) . ' me-1"></i>' . $escape($label) . '</button>';
+        echo '</form>';
+    }
+
     private static function sshAuthMethod(string $value): void
     {
         $escape = static fn($item): string => htmlspecialchars((string)$item, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -138,10 +157,10 @@ final class WinboxTab extends \CommonGLPI
             $value = 'password';
         }
         echo '<div class="row mb-3"><label class="col-sm-3 col-form-label" for="winbox_ssh_auth_method">'
-            . $escape(__('SSH authentication')) . '</label><div class="col-sm-6">';
+            . $escape(__('SSH authentication', 'winbox')) . '</label><div class="col-sm-6">';
         echo '<select class="form-select" id="winbox_ssh_auth_method" name="ssh_auth_method">';
-        echo '<option value="password"' . ($value === 'password' ? ' selected' : '') . '>' . $escape(__('Username and password (default)')) . '</option>';
-        echo '<option value="key_then_password"' . ($value === 'key_then_password' ? ' selected' : '') . '>' . $escape(__('SSH key, then password fallback')) . '</option>';
+        echo '<option value="password"' . ($value === 'password' ? ' selected' : '') . '>' . $escape(__('Username and password (default)', 'winbox')) . '</option>';
+        echo '<option value="key_then_password"' . ($value === 'key_then_password' ? ' selected' : '') . '>' . $escape(__('SSH key, then password fallback', 'winbox')) . '</option>';
         echo '</select></div></div>';
     }
 }

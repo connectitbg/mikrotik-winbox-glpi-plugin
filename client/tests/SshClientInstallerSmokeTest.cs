@@ -18,14 +18,12 @@ internal static class SshClientInstallerSmokeTest
         {
             byte[] puttyFixture = Encoding.UTF8.GetBytes("mock PuTTY executable fixture");
             byte[] plinkFixture = Encoding.UTF8.GetBytes("mock Plink executable fixture");
-            byte[] kittyFixture = CreateKittyArchive(testRoot);
             byte[] winboxFixture = CreateWinboxArchive(testRoot);
             Dictionary<string, byte[]> files = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
             files["/putty.exe"] = puttyFixture;
             files["/plink.exe"] = plinkFixture;
-            files["/kitty.zip"] = kittyFixture;
             files["/winbox.zip"] = winboxFixture;
-            files["/bad-kitty.zip"] = CreateZipSlipArchive();
+            files["/bad-archive.zip"] = CreateZipSlipArchive();
 
             using (FixtureServer server = new FixtureServer(files))
             {
@@ -45,18 +43,10 @@ internal static class SshClientInstallerSmokeTest
                 Assert(File.Exists(plinkPath), "Plink diagnostic executable was installed.");
                 Assert(BytesEqual(plinkFixture, File.ReadAllBytes(plinkPath)), "Plink fixture bytes were preserved.");
 
-                string kittyPath = SshClientInstaller.InstallFromUrl(
-                    "kitty", server.Url + "kitty.zip", Sha256(kittyFixture), clientRoot);
-                Assert(File.Exists(kittyPath), "KiTTY executable was installed.");
-                Assert(BytesEqual(Encoding.UTF8.GetBytes("uncompressed KiTTY executable"), File.ReadAllBytes(kittyPath)),
-                    "KiTTY installer selected the uncompressed executable and named it kitty.exe.");
-                Assert(File.Exists(Path.Combine(clientRoot, "KiTTY", "LICENCE.TXT")), "KiTTY license file was preserved.");
                 ExpectFailure(delegate
                 {
-                    SshClientInstaller.InstallFromUrl("kitty", server.Url + "kitty.zip", Sha256(kittyFixture), clientRoot);
-                }, "An existing KiTTY managed installation was not replaced.");
-                Assert(BytesEqual(Encoding.UTF8.GetBytes("uncompressed KiTTY executable"), File.ReadAllBytes(kittyPath)),
-                    "The existing KiTTY executable remains unchanged.");
+                    SshClientInstaller.InstallFromUrl("kitty", server.Url + "unused.zip", Sha256(puttyFixture), clientRoot);
+                }, "KiTTY downloads and installs are no longer supported.");
 
                 string winboxPath = SshClientInstaller.InstallFromUrl(
                     "winbox", server.Url + "winbox.zip", Sha256(winboxFixture), clientRoot);
@@ -81,7 +71,7 @@ internal static class SshClientInstallerSmokeTest
                 string slipRoot = Path.Combine(testRoot, "zip-slip");
                 ExpectFailure(delegate
                 {
-                    SshClientInstaller.InstallFromUrl("kitty", server.Url + "bad-kitty.zip", Sha256(files["/bad-kitty.zip"]), slipRoot);
+                    SshClientInstaller.InstallFromUrl("winbox", server.Url + "bad-archive.zip", Sha256(files["/bad-archive.zip"]), slipRoot);
                 }, "A ZIP path traversal entry was rejected.");
                 Assert(!File.Exists(Path.Combine(testRoot, "escape.txt")), "A ZIP traversal did not write outside its install directory.");
 
@@ -127,7 +117,7 @@ internal static class SshClientInstallerSmokeTest
                 && rejectedHostKey.Contains("tcp_connection=unknown"),
                 "Explicit host-key trust failures are distinguished from missing transcript details.");
 
-            Console.WriteLine("PASS: WinBox, PuTTY, Plink, KiTTY installer checks plus SSH result classification.");
+            Console.WriteLine("PASS: WinBox, PuTTY, Plink installer checks plus SSH result classification.");
             return 0;
         }
         catch (Exception exception)
@@ -140,22 +130,6 @@ internal static class SshClientInstallerSmokeTest
             try { Directory.Delete(testRoot, true); }
             catch { Console.Error.WriteLine("Note: could not remove the isolated installer smoke-test folder."); }
         }
-    }
-
-    private static byte[] CreateKittyArchive(string root)
-    {
-        string path = Path.Combine(root, "kitty-fixture.zip");
-        using (FileStream file = File.Create(path))
-        using (ZipArchive archive = new ZipArchive(file, ZipArchiveMode.Create))
-        {
-            using (Stream entry = archive.CreateEntry("kitty.exe").Open())
-                entry.Write(Encoding.UTF8.GetBytes("compressed KiTTY executable"), 0, Encoding.UTF8.GetByteCount("compressed KiTTY executable"));
-            using (Stream entry = archive.CreateEntry("nested/kitty_nocompress.exe").Open())
-                entry.Write(Encoding.UTF8.GetBytes("uncompressed KiTTY executable"), 0, Encoding.UTF8.GetByteCount("uncompressed KiTTY executable"));
-            using (Stream entry = archive.CreateEntry("LICENCE.TXT").Open())
-                entry.Write(Encoding.UTF8.GetBytes("fixture license"), 0, Encoding.UTF8.GetByteCount("fixture license"));
-        }
-        return File.ReadAllBytes(path);
     }
 
     private static byte[] CreateWinboxArchive(string root)
@@ -189,7 +163,7 @@ internal static class SshClientInstallerSmokeTest
                     byte[] bytes = Encoding.UTF8.GetBytes("must not be extracted");
                     entry.Write(bytes, 0, bytes.Length);
                 }
-                using (Stream entry = archive.CreateEntry("kitty_nocompress.exe").Open())
+                using (Stream entry = archive.CreateEntry("WinBox.exe").Open())
                 {
                     byte[] bytes = Encoding.UTF8.GetBytes("fake exe");
                     entry.Write(bytes, 0, bytes.Length);

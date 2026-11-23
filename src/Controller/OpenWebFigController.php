@@ -25,7 +25,7 @@ final class OpenWebFigController extends AbstractController
         global $DB, $CFG_GLPI;
         $credentials = Access::credentials($DB, $id);
         if (!$credentials) {
-            return self::returnToEquipment($equipment, __('Configure the RouterOS host before opening WebFig.'), ERROR);
+            return self::returnToEquipment($equipment, __('Configure the RouterOS host before opening WebFig.', 'winbox'), ERROR);
         }
 
         // Reuse the configured HTTPS name so the browser can validate a
@@ -37,7 +37,7 @@ final class OpenWebFigController extends AbstractController
         $www_port = (int)($credentials['www_port'] ?? 80);
         $www_ssl_port = (int)($credentials['www_ssl_port'] ?? 443);
         if (!RouterOsServiceProbe::validTarget($host, $www_port) || !RouterOsServiceProbe::validTarget($host, $www_ssl_port)) {
-            return self::returnToEquipment($equipment, __('The configured WebFig host or service ports are invalid.'), ERROR);
+            return self::returnToEquipment($equipment, __('The configured WebFig host or service ports are invalid.', 'winbox'), ERROR);
         }
 
         if (RouterOsServiceProbe::tls($host, $www_ssl_port)) {
@@ -49,7 +49,7 @@ final class OpenWebFigController extends AbstractController
 
         return self::returnToEquipment(
             $equipment,
-            __('WebFig is not reachable from the GLPI server on the configured WWW-SSL or WWW port.'),
+            __('WebFig is not reachable from the GLPI server on the configured WWW-SSL or WWW port.', 'winbox'),
             ERROR
         );
     }

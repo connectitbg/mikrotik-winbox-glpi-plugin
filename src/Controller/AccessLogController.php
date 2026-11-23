@@ -36,20 +36,20 @@ final class AccessLogController extends AbstractController
         );
 
         ob_start();
-        \Html::header(__('MikroTik access log'), $_SERVER['PHP_SELF'], 'assets', 'networkequipment');
+        \Html::header(__('MikroTik access log', 'winbox'), $_SERVER['PHP_SELF'], 'assets', 'networkequipment');
         echo '<div class="container-fluid p-3">';
         echo '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">';
-        echo '<h2>' . $escape(__('MikroTik access log')) . ' — ' . $escape($equipment->fields['name']) . '</h2>';
+        echo '<h2>' . $escape(__('MikroTik access log', 'winbox')) . ' — ' . $escape($equipment->fields['name']) . '</h2>';
         echo '<a class="btn btn-outline-secondary" href="' . $escape(\Toolbox::getItemTypeFormURL('NetworkEquipment')) . '?id=' . $id . '&forcetab=GlpiPlugin%5CWinbox%5CWinboxTab%241">';
-        echo '<i class="ti ti-arrow-left me-1"></i>' . $escape(__('Back to Winbox')) . '</a>';
+        echo '<i class="ti ti-arrow-left me-1"></i>' . $escape(__('Back to Winbox', 'winbox')) . '</a>';
         echo '</div>';
-        echo '<p class="text-muted">' . $escape(__('Showing the latest 200 entries for this device. “Winbox process started” does not confirm authentication on the router.')) . '</p>';
+        echo '<p class="text-muted">' . $escape(__('Showing the latest 200 entries for this device. “Winbox process started” does not confirm authentication on the router.', 'winbox')) . '</p>';
 
         if ($rows === []) {
-            echo '<div class="alert alert-info">' . $escape(__('No Winbox access events have been recorded for this device yet.')) . '</div>';
+            echo '<div class="alert alert-info">' . $escape(__('No Winbox access events have been recorded for this device yet.', 'winbox')) . '</div>';
         } else {
             echo '<div class="table-responsive"><table class="table table-hover table-striped">';
-            echo '<thead><tr><th>' . $escape(__('Date')) . '</th><th>' . $escape(__('GLPI user')) . '</th><th>' . $escape(__('Target')) . '</th><th>' . $escape(__('Event')) . '</th><th>' . $escape(__('Result')) . '</th></tr></thead><tbody>';
+            echo '<thead><tr><th>' . $escape(__('Date', 'winbox')) . '</th><th>' . $escape(__('GLPI user', 'winbox')) . '</th><th>' . $escape(__('Target', 'winbox')) . '</th><th>' . $escape(__('Event', 'winbox')) . '</th><th>' . $escape(__('Result', 'winbox')) . '</th></tr></thead><tbody>';
             foreach ($rows as $row) {
                 $data = $row['data'];
                 echo '<tr><td>' . $escape($row['timestamp']) . '</td>';
@@ -69,9 +69,9 @@ final class AccessLogController extends AbstractController
     private static function renderResult(string $result, callable $escape): string
     {
         return match ($result) {
-            'process_started' => '<span class="badge bg-success">' . $escape(__('Winbox process started')) . '</span><div class="small text-muted">' . $escape(__('Router authentication was not verified.')) . '</div>',
-            'process_start_failed', 'failed' => '<span class="badge bg-danger">' . $escape(__('Failed')) . '</span>',
-            'pending' => '<span class="badge bg-warning text-dark">' . $escape(__('Waiting for client result')) . '</span>',
+            'process_started' => '<span class="badge bg-success">' . $escape(__('Winbox process started', 'winbox')) . '</span><div class="small text-muted">' . $escape(__('Router authentication was not verified.', 'winbox')) . '</div>',
+            'process_start_failed', 'failed' => '<span class="badge bg-danger">' . $escape(__('Failed', 'winbox')) . '</span>',
+            'pending' => '<span class="badge bg-warning text-dark">' . $escape(__('Waiting for client result', 'winbox')) . '</span>',
             default => '<span class="badge bg-secondary">' . $escape($result) . '</span>',
         };
     }

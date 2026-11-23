@@ -24,7 +24,7 @@ final class RouterOsRestClient
         }
         $this->port = (int)($credentials['api_port'] ?? 443);
         $this->username = (string)($credentials['username'] ?? '');
-        $this->password = (string)($credentials['password'] ?? '');
+        $this->password = Access::decryptPassword((string)($credentials['password'] ?? ''));
 
         if (
             $this->connect_host === ''

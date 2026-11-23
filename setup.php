@@ -20,7 +20,7 @@ function plugin_version_winbox(): array
 {
     return [
         'name' => 'MikroTik Tools for GLPI',
-        'version' => '1.0.1',
+        'version' => '1.0.2',
         'author' => '<a href="https://connectit.bg">Connect IT</a>',
         'homepage' => 'https://connectit.bg',
         'license' => 'GPL-3.0-or-later',
@@ -49,7 +49,8 @@ function plugin_winbox_install(): bool
     $charset = DBConnection::getDefaultCharset();
     $collation = DBConnection::getDefaultCollation();
     $keySign = DBConnection::getDefaultPrimaryKeySignOption();
-    $DB->doQueryOrDie("CREATE TABLE IF NOT EXISTS `$credentials` (
+
+    if (!$DB->tableExists($credentials) && !$DB->doQuery("CREATE TABLE `$credentials` (
         `id` INT $keySign NOT NULL AUTO_INCREMENT,
         `item_id` INT $keySign NOT NULL,
         `ip_address` VARCHAR(255) NOT NULL,
@@ -69,8 +70,11 @@ function plugin_winbox_install(): bool
         `password` TEXT NOT NULL,
         `date_mod` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`), UNIQUE KEY `uniq_item` (`item_id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=$charset COLLATE=$collation", 'Unable to create Winbox credentials table');
-    $DB->doQueryOrDie("CREATE TABLE IF NOT EXISTS `$tokens` (
+    ) ENGINE=InnoDB DEFAULT CHARSET=$charset COLLATE=$collation")) {
+        return false;
+    }
+
+    if (!$DB->tableExists($tokens) && !$DB->doQuery("CREATE TABLE `$tokens` (
         `token_hash` CHAR(64) NOT NULL,
         `item_id` INT UNSIGNED NOT NULL,
         `expires_at` TIMESTAMP NOT NULL,
@@ -80,8 +84,11 @@ function plugin_winbox_install(): bool
         `launch_type` VARCHAR(16) NOT NULL DEFAULT 'winbox',
         `created_by` INT UNSIGNED NOT NULL DEFAULT 0,
         PRIMARY KEY (`token_hash`), KEY `idx_expiry` (`expires_at`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=$charset COLLATE=$collation", 'Unable to create Winbox launch token table');
+    ) ENGINE=InnoDB DEFAULT CHARSET=$charset COLLATE=$collation")) {
+        return false;
+    }
 
+    $migration = new Migration(plugin_version_winbox()['version']);
     foreach ([
         'api_host' => 'VARCHAR(255) DEFAULT NULL',
         'api_port' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 443',
@@ -95,12 +102,7 @@ function plugin_winbox_install(): bool
         'ssh_auth_method' => "VARCHAR(32) NOT NULL DEFAULT 'password'",
         'ssh_host_keys' => 'TEXT DEFAULT NULL',
     ] as $field => $definition) {
-        if (!$DB->fieldExists($credentials, $field)) {
-            $DB->doQueryOrDie(
-                "ALTER TABLE `$credentials` ADD COLUMN `$field` $definition",
-                "Unable to add `$field` to Winbox credentials table"
-            );
-        }
+        $migration->addField($credentials, $field, $definition);
     }
 
     foreach ([
@@ -109,12 +111,17 @@ function plugin_winbox_install(): bool
         'launch_result' => 'VARCHAR(32) DEFAULT NULL',
         'launch_type' => "VARCHAR(16) NOT NULL DEFAULT 'winbox'",
     ] as $field => $definition) {
-        if (!$DB->fieldExists($tokens, $field)) {
-            $DB->doQueryOrDie(
-                "ALTER TABLE `$tokens` ADD COLUMN `$field` $definition",
-                "Unable to add `$field` to Winbox launch token table"
-            );
-        }
+        $migration->addField($tokens, $field, $definition);
+    }
+    $migration->addKey($credentials, 'item_id', 'uniq_item', 'UNIQUE');
+    $migration->addKey($tokens, 'expires_at', 'idx_expiry');
+    $migration->migrationOneTable($credentials);
+    $migration->migrationOneTable($tokens);
+
+    require_once GLPI_ROOT . '/plugins/winbox/src/Service/Access.php';
+    if (!\GlpiPlugin\Winbox\Service\Access::migrateStoredPasswords($DB)) {
+        trigger_error('Unable to encrypt existing Winbox router passwords. Check the GLPI security key and database permissions.', E_USER_WARNING);
+        return false;
     }
 
     if (defined('GLPI_LOG_DIR') && !is_file(GLPI_LOG_DIR . '/mikrotik_access.log')) {

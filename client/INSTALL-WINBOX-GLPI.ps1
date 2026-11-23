@@ -28,7 +28,6 @@ try {
     $protocols = @{
         'mikrotik' = 'URL:MikroTik Winbox Protocol'
         'mikrotik-putty' = 'URL:MikroTik SSH via PuTTY Protocol'
-        'mikrotik-kitty' = 'URL:MikroTik SSH via KiTTY Protocol'
     }
     $handlerCommand = 'powershell.exe -WindowStyle Hidden -NoLogo -NoProfile -ExecutionPolicy Bypass -File "' + $helperPath + '" "%1"'
     foreach ($protocol in $protocols.Keys) {
@@ -45,9 +44,10 @@ try {
             throw "Windows is not using the current $protocol handler. Contact the GLPI administrator."
         }
     }
+    Remove-Item -LiteralPath 'HKCU:\Software\Classes\mikrotik-kitty' -Recurse -Force -ErrorAction SilentlyContinue
 
     Add-Type -AssemblyName PresentationFramework
-    [System.Windows.MessageBox]::Show('MikroTik Tools for GLPI protocol handlers are registered for this Windows user. This manual fallback does not install PuTTY or KiTTY; run Winbox-GLPI-Setup.exe from the GLPI setup page to install the managed SSH clients. The helper and log are in ' + $installDirectory + '.', 'MikroTik Tools for GLPI', 'OK', 'Information') | Out-Null
+    [System.Windows.MessageBox]::Show('MikroTik Tools for GLPI protocol handlers are registered for this Windows user. This manual fallback does not install PuTTY; run Winbox-GLPI-Setup.exe from the GLPI setup page to install the managed SSH client. The helper and log are in ' + $installDirectory + '.', 'MikroTik Tools for GLPI', 'OK', 'Information') | Out-Null
 } catch {
     Add-Type -AssemblyName PresentationFramework
     [System.Windows.MessageBox]::Show($_.Exception.Message, 'MikroTik Tools for GLPI — installation error', 'OK', 'Error') | Out-Null

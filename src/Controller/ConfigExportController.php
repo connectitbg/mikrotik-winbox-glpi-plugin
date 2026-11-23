@@ -25,7 +25,7 @@ final class ConfigExportController extends AbstractController
         $equipment = self::getEditableEquipment($id);
         $credentials = Access::credentials($DB, $id);
         if (!$credentials) {
-            return self::redirectWithMessage($equipment, __('Configure the Winbox connection before exporting configuration.'), ERROR);
+            return self::redirectWithMessage($equipment, __('Configure the Winbox connection before exporting configuration.', 'winbox'), ERROR);
         }
 
         try {

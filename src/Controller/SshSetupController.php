@@ -67,31 +67,31 @@ final class SshSetupController extends AbstractController
         }
 
         ob_start();
-        \Html::header(__('MikroTik SSH setup'), $_SERVER['PHP_SELF'], 'assets', 'networkequipment');
+        \Html::header(__('MikroTik SSH setup', 'winbox'), $_SERVER['PHP_SELF'], 'assets', 'networkequipment');
         echo '<div class="container-fluid p-3"><div class="card"><div class="card-header"><h2>'
-            . $escape(__('Prepare MikroTik SSH access')) . ' — ' . $escape($equipment->fields['name'])
+            . $escape(__('Prepare MikroTik SSH access', 'winbox')) . ' — ' . $escape($equipment->fields['name'])
             . '</h2></div><div class="card-body">';
-        echo '<p>' . $escape(__('SSH endpoint')) . ': <code>'
+        echo '<p>' . $escape(__('SSH endpoint', 'winbox')) . ': <code>'
             . $escape(Access::sshHost($credentials) . ':' . $credentials['ssh_port']) . '</code></p>';
 
         if ($fingerprints !== []) {
-            echo '<div class="alert alert-success">' . $escape(__('The router SSH endpoint responded. You can now verify and pin its fingerprint.')) . '</div>';
+            echo '<div class="alert alert-success">' . $escape(__('The router SSH endpoint responded. You can now verify and pin its fingerprint.', 'winbox')) . '</div>';
             echo '<ul>';
             foreach ($fingerprints as $key) {
                 echo '<li><code>' . $escape($key['type']) . '</code> — <code>' . $escape($key['fingerprint']) . '</code></li>';
             }
             echo '</ul>';
         } else {
-            echo '<div class="alert alert-warning"><strong>' . $escape(__('GLPI cannot read an SSH host key from this endpoint.')) . '</strong> '
-                . $escape(__('No SSH password is sent during this check. The port may be blocked, the SSH service may be disabled, or its port may differ from the configured value.'))
+            echo '<div class="alert alert-warning"><strong>' . $escape(__('GLPI cannot read an SSH host key from this endpoint.', 'winbox')) . '</strong> '
+                . $escape(__('No SSH password is sent during this check. The port may be blocked, the SSH service may be disabled, or its port may differ from the configured value.', 'winbox'))
                 . '</div>';
             if ($probe_error !== '') {
                 echo '<p class="text-muted"><code>' . $escape($probe_error) . '</code></p>';
             }
         }
 
-        echo '<div class="alert alert-info">' . $escape(__('GLPI cannot configure a router while both SSH and RouterOS REST are unavailable. The commands below must be run once in the router WinBox Terminal by an administrator. They enable SSH on the configured port, restrict the SSH service to the source networks you enter, enable password authentication, and add narrow firewall allow rules for those same sources.')) . '</div>';
-        echo '<div class="alert alert-warning">' . $escape(__('Enter the source IP address or CIDR that the router sees for GLPI. If GLPI connects through NAT, enter its public NAT egress address. Include every existing administrator network you still need for SSH; this script replaces the SSH service address allow-list. It will not open SSH to all addresses. Use WinBox Safe Mode when applying router firewall changes remotely.')) . '</div>';
+        echo '<div class="alert alert-info">' . $escape(__('GLPI cannot configure a router while both SSH and RouterOS REST are unavailable. The commands below must be run once in the router WinBox Terminal by an administrator. They enable SSH on the configured port, restrict the SSH service to the source networks you enter, enable password authentication, and add narrow firewall allow rules for those same sources.', 'winbox')) . '</div>';
+        echo '<div class="alert alert-warning">' . $escape(__('Enter the source IP address or CIDR that the router sees for GLPI. If GLPI connects through NAT, enter its public NAT egress address. Include every existing administrator network you still need for SSH; this script replaces the SSH service address allow-list. It will not open SSH to all addresses. Use WinBox Safe Mode when applying router firewall changes remotely.', 'winbox')) . '</div>';
 
         if ($form_error !== '') {
             echo '<div class="alert alert-danger">' . $escape($form_error) . '</div>';
@@ -100,28 +100,28 @@ final class SshSetupController extends AbstractController
         echo '<form method="post" action="' . $escape($root . '/plugins/winbox/SshSetup') . '">';
         echo '<input type="hidden" name="id" value="' . $id . '">';
         echo '<input type="hidden" name="_glpi_csrf_token" value="' . $escape(Session::getNewCSRFToken()) . '">';
-        echo '<div class="mb-3"><label class="form-label" for="winbox_allowed_sources">' . $escape(__('Allowed SSH source IPs/CIDRs (comma separated)')) . '</label>';
+        echo '<div class="mb-3"><label class="form-label" for="winbox_allowed_sources">' . $escape(__('Allowed SSH source IPs/CIDRs (comma separated)', 'winbox')) . '</label>';
         echo '<input class="form-control" id="winbox_allowed_sources" name="allowed_sources" type="text" value="' . $escape($allowed_sources) . '" required placeholder="203.0.113.25/32, 192.168.10.0/24">';
-        echo '<div class="form-text">' . $escape(__('The GLPI source address is not assumed from its private server address because NAT may change what the router sees. Do not enter 0.0.0.0/0 or ::/0.')) . '</div></div>';
+        echo '<div class="form-text">' . $escape(__('The GLPI source address is not assumed from its private server address because NAT may change what the router sees. Do not enter 0.0.0.0/0 or ::/0.', 'winbox')) . '</div></div>';
         echo '<div class="d-flex gap-2 flex-wrap mb-3">';
-        echo '<button class="btn btn-primary" type="submit"><i class="ti ti-terminal-2 me-1"></i>' . $escape(__('Generate RouterOS commands')) . '</button>';
-        echo '<button class="btn btn-outline-primary" type="submit" name="download_commands" value="1"><i class="ti ti-download me-1"></i>' . $escape(__('Download .rsc setup script')) . '</button>';
-        echo '<a class="btn btn-outline-secondary" href="' . $escape($root . '/plugins/winbox/SshTrust?id=' . $id) . '"><i class="ti ti-shield-check me-1"></i>' . $escape(__('Verify router SSH fingerprint')) . '</a>';
+        echo '<button class="btn btn-primary" type="submit"><i class="ti ti-terminal-2 me-1"></i>' . $escape(__('Generate RouterOS commands', 'winbox')) . '</button>';
+        echo '<button class="btn btn-outline-primary" type="submit" name="download_commands" value="1"><i class="ti ti-download me-1"></i>' . $escape(__('Download .rsc setup script', 'winbox')) . '</button>';
+        echo '<a class="btn btn-outline-secondary" href="' . $escape($root . '/plugins/winbox/SshTrust?id=' . $id) . '"><i class="ti ti-shield-check me-1"></i>' . $escape(__('Verify router SSH fingerprint', 'winbox')) . '</a>';
         echo '</div></form>';
 
         if ($commands !== '') {
-            echo '<div class="mb-3"><label class="form-label" for="winbox_ssh_commands">' . $escape(__('RouterOS commands — paste into WinBox Terminal as an administrator')) . '</label>';
+            echo '<div class="mb-3"><label class="form-label" for="winbox_ssh_commands">' . $escape(__('RouterOS commands — paste into WinBox Terminal as an administrator', 'winbox')) . '</label>';
             echo '<textarea class="form-control font-monospace" id="winbox_ssh_commands" rows="16" readonly>' . $escape($commands) . '</textarea>';
-            echo '<button class="btn btn-outline-secondary mt-2" type="button" data-copy-target="winbox_ssh_commands" data-copied-label="' . $escape(__('Copied')) . '"><i class="ti ti-copy me-1"></i>' . $escape(__('Copy commands')) . '</button></div>';
-            echo '<h3>' . $escape(__('Required RouterOS account policies')) . '</h3><ul>';
-            echo '<li>' . $escape(__('Text export: ssh, read, and sensitive.')) . '</li>';
-            echo '<li>' . $escape(__('Text restore: ssh, read, sensitive, ftp, and write. The write policy permits configuration changes.')) . '</li>';
-            echo '</ul><p class="text-muted">' . $escape(__('The script does not change users or groups. Check the router account policy in WinBox before using backup or restore.')) . '</p>';
+            echo '<button class="btn btn-outline-secondary mt-2" type="button" data-copy-target="winbox_ssh_commands" data-copied-label="' . $escape(__('Copied', 'winbox')) . '"><i class="ti ti-copy me-1"></i>' . $escape(__('Copy commands', 'winbox')) . '</button></div>';
+            echo '<h3>' . $escape(__('Required RouterOS account policies', 'winbox')) . '</h3><ul>';
+            echo '<li>' . $escape(__('Text export: ssh, read, and sensitive.', 'winbox')) . '</li>';
+            echo '<li>' . $escape(__('Text restore: ssh, read, sensitive, ftp, and write. The write policy permits configuration changes.', 'winbox')) . '</li>';
+            echo '</ul><p class="text-muted">' . $escape(__('The script does not change users or groups. Check the router account policy in WinBox before using backup or restore.', 'winbox')) . '</p>';
         }
 
-        echo '<hr><a class="btn btn-outline-secondary" href="' . $escape($root . '/front/networkequipment.form.php?id=' . $id . '&forcetab=GlpiPlugin%5CWinbox%5CWinboxTab%241') . '">' . $escape(__('Back to Winbox')) . '</a>';
+        echo '<hr><a class="btn btn-outline-secondary" href="' . $escape($root . '/front/networkequipment.form.php?id=' . $id . '&forcetab=GlpiPlugin%5CWinbox%5CWinboxTab%241') . '">' . $escape(__('Back to Winbox', 'winbox')) . '</a>';
         echo '</div></div></div>';
-        echo '<script src="' . $escape($root . '/plugins/winbox/js/ssh-setup.js') . '" defer></script>';
+        echo \Html::script('plugins/winbox/js/ssh-setup.js');
         \Html::footer();
         return new Response((string)ob_get_clean(), 200, ['Cache-Control' => 'no-store, private']);
     }
@@ -131,7 +131,7 @@ final class SshSetupController extends AbstractController
     {
         $parts = preg_split('/[\\s,;]+/', trim($raw), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         if ($parts === [] || count($parts) > 32) {
-            throw new \InvalidArgumentException(__('Enter between 1 and 32 allowed source IP addresses or CIDRs.'));
+            throw new \InvalidArgumentException(__('Enter between 1 and 32 allowed source IP addresses or CIDRs.', 'winbox'));
         }
 
         $sources = [];
@@ -139,7 +139,7 @@ final class SshSetupController extends AbstractController
             $segments = explode('/', $part, 2);
             $address = $segments[0];
             if (filter_var($address, FILTER_VALIDATE_IP) === false) {
-                throw new \InvalidArgumentException(__('Each source must be a valid IPv4/IPv6 address, optionally followed by a CIDR prefix.'));
+                throw new \InvalidArgumentException(__('Each source must be a valid IPv4/IPv6 address, optionally followed by a CIDR prefix.', 'winbox'));
             }
 
             $is_ipv6 = str_contains($address, ':');
@@ -147,7 +147,7 @@ final class SshSetupController extends AbstractController
             $min_prefix = $is_ipv6 ? 64 : 24;
             $prefix = $segments[1] ?? (string)$max_prefix;
             if (!ctype_digit($prefix) || (int)$prefix < $min_prefix || (int)$prefix > $max_prefix) {
-                throw new \InvalidArgumentException(__('Use a host address (/32 IPv4 or /128 IPv6), or a network no broader than /24 IPv4 or /64 IPv6.'));
+                throw new \InvalidArgumentException(__('Use a host address (/32 IPv4 or /128 IPv6), or a network no broader than /24 IPv4 or /64 IPv6.', 'winbox'));
             }
 
             $source = $address . '/' . (int)$prefix;
@@ -161,7 +161,7 @@ final class SshSetupController extends AbstractController
     private static function buildCommands(array $sources, int $port): string
     {
         if ($port < 1 || $port > 65535) {
-            throw new \InvalidArgumentException(__('The configured SSH port is invalid.'));
+            throw new \InvalidArgumentException(__('The configured SSH port is invalid.', 'winbox'));
         }
 
         $lines = [

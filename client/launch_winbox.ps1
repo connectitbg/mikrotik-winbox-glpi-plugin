@@ -74,8 +74,9 @@ function ConvertTo-WindowsCommandLineArgument([string]$Value) {
 }
 
 function Find-SshClient([string]$SelectedClient) {
-    $executableName = if ($SelectedClient -eq 'putty') { 'putty.exe' } else { 'kitty.exe' }
-    $folderName = if ($SelectedClient -eq 'putty') { 'PuTTY' } else { 'KiTTY' }
+    if ($SelectedClient -ne 'putty') { return $null }
+    $executableName = 'putty.exe'
+    $folderName = 'PuTTY'
     $candidates = @(
         (Join-Path $env:LOCALAPPDATA "Winbox-GLPI\clients\$folderName\$executableName"),
         (Join-Path $env:LOCALAPPDATA "Winbox-GLPI\clients\$executableName"),
@@ -111,21 +112,21 @@ try {
     if ([string]::IsNullOrWhiteSpace($uri)) {
         Write-LaunchLog 'No URI argument received.'
         Add-Type -AssemblyName PresentationFramework
-        [System.Windows.MessageBox]::Show('This helper is not started manually. Open a network equipment record in GLPI and use its WinBox, PuTTY, or KiTTY action.', 'MikroTik Tools for GLPI', 'OK', 'Information') | Out-Null
+        [System.Windows.MessageBox]::Show('This helper is not started manually. Open a network equipment record in GLPI and use its WinBox or PuTTY action.', 'MikroTik Tools for GLPI', 'OK', 'Information') | Out-Null
         exit 0
     }
     if ($uri -match '^mikrotik://([a-f0-9]{64})/?$') {
         $client = 'winbox'
         $token = $Matches[1]
-    } elseif ($uri -match '^mikrotik-(putty|kitty)://([a-f0-9]{64})/?$') {
-        $client = $Matches[1].ToLowerInvariant()
-        $token = $Matches[2]
+    } elseif ($uri -match '^mikrotik-putty://([a-f0-9]{64})/?$') {
+        $client = 'putty'
+        $token = $Matches[1]
     } else {
         throw 'Invalid launch code. Return to GLPI and try again.'
     }
     if ($token -notmatch '^[a-f0-9]{64}$') { throw 'Invalid launch code. Return to GLPI and try again.' }
     if ($client -ne 'winbox') {
-        $clientName = if ($client -eq 'putty') { 'PuTTY' } else { 'KiTTY' }
+        $clientName = 'PuTTY'
         Write-SshTestLog ('event=protocol_received client=' + $client)
         $sshClient = Find-SshClient $client
         if (-not $sshClient) {
@@ -147,7 +148,7 @@ try {
     Write-LaunchLog ('GLPI connection exchange succeeded for ' + $client + '.')
 
     if ($client -ne 'winbox') {
-        $executableName = if ($client -eq 'putty') { 'putty.exe' } else { 'kitty.exe' }
+        $executableName = 'putty.exe'
         $sshArgumentValues = @('-ssh', '-P', [string]$connection.port, '-l', [string]$connection.username)
         $savedPassword = [string]$connection.password
         if ([string]::IsNullOrEmpty($savedPassword)) {
@@ -161,26 +162,22 @@ try {
         if ($passwordHasLineBreak) {
             throw 'The saved SSH password contains a line break and cannot be supplied automatically. Re-save it as a single-line password in GLPI.'
         }
-        if ($client -eq 'kitty') {
-            $sshArgumentValues += @('-pass', $savedPassword)
-        } else {
-            $versionText = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($sshClient).ProductVersion
-            $versionMatch = [regex]::Match([string]$versionText, '(?:^|\D)(\d+)\.(\d+)(?:\D|$)')
-            $major = 0
-            $minor = 0
-            $supportsPasswordFile = $versionMatch.Success -and [int]::TryParse($versionMatch.Groups[1].Value, [ref]$major) -and [int]::TryParse($versionMatch.Groups[2].Value, [ref]$minor) -and ($major -gt 0 -or $minor -ge 83)
-            if (-not $supportsPasswordFile) {
-                throw 'This PuTTY version cannot receive the saved password without an interactive prompt. Run the current MikroTik Tools for GLPI setup installer to install its managed PuTTY version.'
-            }
-            $privateDirectory = Join-Path $env:LOCALAPPDATA 'Winbox-GLPI'
-            New-Item -ItemType Directory -Path $privateDirectory -Force | Out-Null
-            $passwordFile = Join-Path $privateDirectory ('putty-password-' + [guid]::NewGuid().ToString('N') + '.tmp')
-            [System.IO.File]::WriteAllText($passwordFile, $savedPassword + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
-            [System.IO.File]::SetAttributes($passwordFile, [System.IO.FileAttributes]::Hidden)
-            $passwordFileMatches = [System.IO.File]::ReadAllText($passwordFile, [System.Text.UTF8Encoding]::new($false)) -ceq ($savedPassword + [Environment]::NewLine)
-            $sshArgumentValues += @('-pwfile', $passwordFile)
-            Write-SshTestLog ('event=auth_material_ready client=putty method=pwfile file_created=' + (Test-Path -LiteralPath $passwordFile) + ' file_matches_saved_value=' + $passwordFileMatches)
+        $versionText = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($sshClient).ProductVersion
+        $versionMatch = [regex]::Match([string]$versionText, '(?:^|\D)(\d+)\.(\d+)(?:\D|$)')
+        $major = 0
+        $minor = 0
+        $supportsPasswordFile = $versionMatch.Success -and [int]::TryParse($versionMatch.Groups[1].Value, [ref]$major) -and [int]::TryParse($versionMatch.Groups[2].Value, [ref]$minor) -and ($major -gt 0 -or $minor -ge 83)
+        if (-not $supportsPasswordFile) {
+            throw 'This PuTTY version cannot receive the saved password without an interactive prompt. Run the current MikroTik Tools for GLPI setup installer to install its managed PuTTY version.'
         }
+        $privateDirectory = Join-Path $env:LOCALAPPDATA 'Winbox-GLPI'
+        New-Item -ItemType Directory -Path $privateDirectory -Force | Out-Null
+        $passwordFile = Join-Path $privateDirectory ('putty-password-' + [guid]::NewGuid().ToString('N') + '.tmp')
+        [System.IO.File]::WriteAllText($passwordFile, $savedPassword + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::SetAttributes($passwordFile, [System.IO.FileAttributes]::Hidden)
+        $passwordFileMatches = [System.IO.File]::ReadAllText($passwordFile, [System.Text.UTF8Encoding]::new($false)) -ceq ($savedPassword + [Environment]::NewLine)
+        $sshArgumentValues += @('-pwfile', $passwordFile)
+        Write-SshTestLog ('event=auth_material_ready client=putty method=pwfile file_created=' + (Test-Path -LiteralPath $passwordFile) + ' file_matches_saved_value=' + $passwordFileMatches)
         $sshArgumentValues += [string]$connection.host
         $sshArguments = $sshArgumentValues | ForEach-Object { ConvertTo-WindowsCommandLineArgument ([string]$_) }
         $sshStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
@@ -198,11 +195,7 @@ try {
             Write-SshTestLog ('event=pwfile_cleanup_finished client=putty exists=' + (Test-Path -LiteralPath $passwordFile))
             $passwordFile = $null
         }
-        if ($client -eq 'kitty') {
-            Write-LaunchLog 'KiTTY process started with saved credentials; password omitted from the launch log.'
-        } else {
-            Write-LaunchLog 'PuTTY process started; saved password supplied through a temporary password file.'
-        }
+        Write-LaunchLog 'PuTTY process started; saved password supplied through a temporary password file.'
         Send-LaunchReport $token 'started' $client
         $connection = $null
         $bodyData = $null

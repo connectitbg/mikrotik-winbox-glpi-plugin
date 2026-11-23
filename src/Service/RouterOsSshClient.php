@@ -23,7 +23,7 @@ final class RouterOsSshClient
         $this->host = Access::sshHost($credentials);
         $this->port = (int)($credentials['ssh_port'] ?? 22);
         $this->username = (string)($credentials['username'] ?? '');
-        $this->password = (string)($credentials['password'] ?? '');
+        $this->password = Access::decryptPassword((string)($credentials['password'] ?? ''));
         $this->auth_method = (string)($credentials['ssh_auth_method'] ?? 'password');
 
         if (

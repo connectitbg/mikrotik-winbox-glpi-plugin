@@ -1,0 +1,17 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: MikroTik Tools for GLPI 1.0.2\n"
+"Language: bg_BG\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "This is an intermediate step. Click below to send the one-time code to the Windows handler."
+msgstr "Това е междинна стъпка. Натиснете бутона по-долу, за да предадете еднократния код на Windows обработчика."
+
+msgid "The code expires after 90 seconds and can only be used once."
+msgstr "Кодът изтича след 90 секунди и може да се използва само веднъж."
+
+msgid "Start Winbox"
+msgstr "Стартирай Winbox"
