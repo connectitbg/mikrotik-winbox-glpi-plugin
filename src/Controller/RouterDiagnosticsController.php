@@ -19,14 +19,13 @@ final class RouterDiagnosticsController extends AbstractController
     #[Route('/RouterDiagnostics', name: 'winbox_router_diagnostics', methods: ['GET', 'POST'])]
     public function __invoke(Request $request): Response
     {
-        Session::checkRight('config', UPDATE);
         global $DB;
 
         $id = $request->isMethod('POST')
             ? $request->request->getInt('id')
             : $request->query->getInt('id');
         $equipment = new NetworkEquipment();
-        if ($id < 1 || !$equipment->getFromDB($id) || !$equipment->can($id, UPDATE)) {
+        if ($id < 1 || !$equipment->getFromDB($id) || !Access::canRunDiagnostics($id)) {
             throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
         }
         $credentials = Access::credentials($DB, $id);

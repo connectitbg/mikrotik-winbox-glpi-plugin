@@ -34,7 +34,7 @@ final class RedeemSshController extends AbstractController
             $token_row = $row;
             break;
         }
-        if (!$token_row || strtotime($token_row['expires_at']) < time()) {
+        if (!$token_row || strtotime($token_row['expires_at']) <= time()) {
             return new JsonResponse(['error' => 'SSH launch code expired or already used'], 410, ['Cache-Control' => 'no-store']);
         }
 
@@ -45,7 +45,7 @@ final class RedeemSshController extends AbstractController
                 'token_hash' => $hash,
                 'launch_type' => $client,
                 'redeemed_at' => null,
-                'expires_at' => ['>=', date('Y-m-d H:i:s')],
+                'expires_at' => ['>', date('Y-m-d H:i:s')],
             ]
         );
         if ($DB->affectedRows() !== 1) {

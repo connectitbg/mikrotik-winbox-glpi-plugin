@@ -1,6 +1,7 @@
 param([Parameter(Position = 0)][string]$ProtocolUri)
 
 $ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Core
 $endpoint = '__WINBOX_GLPI_REDEEM_URL__'
 $reportEndpoint = $endpoint -replace '/Redeem$', '/ReportLaunch'
 $sshRedeemEndpoint = $endpoint -replace '/Redeem$', '/RedeemSsh'
@@ -8,7 +9,9 @@ $sshReportEndpoint = $endpoint -replace '/Redeem$', '/ReportSshLaunch'
 $launchLog = Join-Path $PSScriptRoot 'winbox-glpi-launch.log'
 $token = $null
 $client = 'winbox'
-$passwordFile = $null
+$passwordPipe = $null
+$pipeWait = $null
+$sshProcess = $null
 $credentialExchangeSucceeded = $false
 $sshClient = $null
 $clientName = $null
@@ -170,14 +173,19 @@ try {
         if (-not $supportsPasswordFile) {
             throw 'This PuTTY version cannot receive the saved password without an interactive prompt. Run the current MikroTik Tools for GLPI setup installer to install its managed PuTTY version.'
         }
-        $privateDirectory = Join-Path $env:LOCALAPPDATA 'Winbox-GLPI'
-        New-Item -ItemType Directory -Path $privateDirectory -Force | Out-Null
-        $passwordFile = Join-Path $privateDirectory ('putty-password-' + [guid]::NewGuid().ToString('N') + '.tmp')
-        [System.IO.File]::WriteAllText($passwordFile, $savedPassword + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
-        [System.IO.File]::SetAttributes($passwordFile, [System.IO.FileAttributes]::Hidden)
-        $passwordFileMatches = [System.IO.File]::ReadAllText($passwordFile, [System.Text.UTF8Encoding]::new($false)) -ceq ($savedPassword + [Environment]::NewLine)
-        $sshArgumentValues += @('-pwfile', $passwordFile)
-        Write-SshTestLog ('event=auth_material_ready client=putty method=pwfile file_created=' + (Test-Path -LiteralPath $passwordFile) + ' file_matches_saved_value=' + $passwordFileMatches)
+        $pipeName = 'WinboxGlpi-' + [guid]::NewGuid().ToString('N')
+        $pipePath = '\\.\pipe\' + $pipeName
+        $pipeSecurity = [System.IO.Pipes.PipeSecurity]::new()
+        $pipeSecurity.SetAccessRuleProtection($true, $false)
+        $currentUserSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User
+        if (-not $currentUserSid) { throw 'Windows could not identify the signed-in user for private password delivery.' }
+        $pipeSecurity.AddAccessRule([System.IO.Pipes.PipeAccessRule]::new($currentUserSid, [System.IO.Pipes.PipeAccessRights]::ReadWrite, [System.Security.AccessControl.AccessControlType]::Allow))
+        $systemSid = [System.Security.Principal.SecurityIdentifier]::new([System.Security.Principal.WellKnownSidType]::LocalSystemSid, $null)
+        $pipeSecurity.AddAccessRule([System.IO.Pipes.PipeAccessRule]::new($systemSid, [System.IO.Pipes.PipeAccessRights]::FullControl, [System.Security.AccessControl.AccessControlType]::Allow))
+        $passwordPipe = [System.IO.Pipes.NamedPipeServerStream]::new($pipeName, [System.IO.Pipes.PipeDirection]::Out, 1, [System.IO.Pipes.PipeTransmissionMode]::Byte, [System.IO.Pipes.PipeOptions]::Asynchronous, 4096, 4096, $pipeSecurity)
+        $pipeWait = $passwordPipe.BeginWaitForConnection($null, $null)
+        $sshArgumentValues += @('-pwfile', $pipePath)
+        Write-SshTestLog 'event=auth_material_ready client=putty method=private_named_pipe password_file_created=false'
         $sshArgumentValues += [string]$connection.host
         $sshArguments = $sshArgumentValues | ForEach-Object { ConvertTo-WindowsCommandLineArgument ([string]$_) }
         $sshStartInfo = [System.Diagnostics.ProcessStartInfo]::new()
@@ -186,16 +194,22 @@ try {
         $sshStartInfo.WorkingDirectory = Split-Path -Parent $sshClient
         $sshProcess = [System.Diagnostics.Process]::Start($sshStartInfo)
         if (-not $sshProcess) { throw "Windows could not start $clientName." }
-        Write-SshTestLog ('event=process_started client=' + $client + ' pid=' + $sshProcess.Id + ' auth_result=unknown')
-        if ($passwordFile) {
-            try { $null = $sshProcess.WaitForInputIdle(5000) } catch { Start-Sleep -Seconds 1 }
-            Start-Sleep -Milliseconds 500
-            Write-SshTestLog ('event=pwfile_cleanup_started client=putty exists=' + (Test-Path -LiteralPath $passwordFile))
-            Remove-Item -LiteralPath $passwordFile -Force -ErrorAction SilentlyContinue
-            Write-SshTestLog ('event=pwfile_cleanup_finished client=putty exists=' + (Test-Path -LiteralPath $passwordFile))
-            $passwordFile = $null
+        $sshStartInfo.Arguments = ''
+        if (-not $pipeWait.AsyncWaitHandle.WaitOne(10000)) { throw 'PuTTY did not read the password from the private Windows pipe.' }
+        $passwordPipe.EndWaitForConnection($pipeWait)
+        $pipeWait.AsyncWaitHandle.Close()
+        $pipeWait = $null
+        $passwordBytes = [System.Text.Encoding]::UTF8.GetBytes($savedPassword + [Environment]::NewLine)
+        try {
+            $passwordPipe.Write($passwordBytes, 0, $passwordBytes.Length)
+            $passwordPipe.Flush()
+        } finally {
+            [Array]::Clear($passwordBytes, 0, $passwordBytes.Length)
         }
-        Write-LaunchLog 'PuTTY process started; saved password supplied through a temporary password file.'
+        $passwordPipe.Dispose()
+        $passwordPipe = $null
+        Write-SshTestLog ('event=process_started client=' + $client + ' pid=' + $sshProcess.Id + ' auth_result=unknown')
+        Write-LaunchLog 'PuTTY process started; saved password supplied through a private Windows pipe without writing a local password file.'
         Send-LaunchReport $token 'started' $client
         $connection = $null
         $bodyData = $null
@@ -227,7 +241,9 @@ try {
     $connection = $null
     $body = $null
 } catch {
-    if ($passwordFile) { Remove-Item -LiteralPath $passwordFile -Force -ErrorAction SilentlyContinue }
+    if ($passwordPipe) { $passwordPipe.Dispose() }
+    if ($pipeWait) { $pipeWait.AsyncWaitHandle.Close() }
+    if ($sshProcess -and -not $sshProcess.HasExited) { try { $sshProcess.Kill() } catch { } }
     if ($credentialExchangeSucceeded -and $token -match '^[a-f0-9]{64}$') {
         Send-LaunchReport $token 'failed' $client
     }

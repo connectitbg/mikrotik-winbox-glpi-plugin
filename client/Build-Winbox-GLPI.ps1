@@ -31,6 +31,7 @@ if ($outputDirectory) {
 
 & $compiler /nologo /target:winexe /platform:anycpu /optimize+ `
     "/out:$OutputPath" `
+    /reference:System.Core.dll `
     /reference:System.Windows.Forms.dll `
     /reference:System.Web.Extensions.dll `
     /reference:System.IO.Compression.dll `

@@ -4,9 +4,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.IO.Pipes;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -15,8 +18,8 @@ using Microsoft.Win32;
 [assembly: AssemblyDescription("MikroTik Tools for GLPI client installer and protocol handler")]
 [assembly: AssemblyCompany("Connect IT")]
 [assembly: AssemblyProduct("MikroTik Tools for GLPI")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.2.0")]
 
 internal static class Program
 {
@@ -24,6 +27,10 @@ internal static class Program
     private static readonly string ServerBaseUrl = "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~".TrimEnd('\0');
     private const string ProductName = "MikroTik Tools for GLPI";
     private const string InstallFolderName = "Winbox-GLPI";
+    private const string PasswordPipeMarker = "__WINBOX_GLPI_PASSWORD_PIPE__";
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetNamedPipeClientProcessId(IntPtr pipe, out uint clientProcessId);
 
     [STAThread]
     private static int Main(string[] args)
@@ -170,8 +177,8 @@ internal static class Program
         string existing = client == "winbox" ? FindWinbox() : FindSshClient(client);
         if (!String.IsNullOrEmpty(existing))
         {
-            bool requiresPasswordFile = client == "putty" || client == "plink";
-            bool compatible = !requiresPasswordFile || SupportsPuttyPasswordFile(existing);
+            bool requiresPasswordPipe = client == "putty" || client == "plink";
+            bool compatible = !requiresPasswordPipe || SupportsPuttyPasswordFile(existing);
             if (compatible)
             {
                 WriteLog(clientName + " was found at " + existing + "; the existing installation was left unchanged.");
@@ -181,7 +188,7 @@ internal static class Program
             string managedPath = GetManagedClientPath(client, clientsDirectory);
             if (String.Equals(Path.GetFullPath(existing), Path.GetFullPath(managedPath), StringComparison.OrdinalIgnoreCase))
             {
-                WriteLog(clientName + " is installed, but this version does not support the required password-file option; it was left unchanged.");
+                WriteLog(clientName + " is installed, but this version does not support the required private password-pipe option; it was left unchanged.");
                 return "found, but too old for automatic authentication; left unchanged";
             }
 
@@ -198,7 +205,7 @@ internal static class Program
                 return "installed version is too old; existing files left unchanged";
             }
 
-            WriteLog(clientName + " existing version does not support the required password-file option; installing a separate managed copy without changing it.");
+            WriteLog(clientName + " existing version does not support the required private password-pipe option; installing a separate managed copy without changing it.");
         }
 
         SetSetupProgress(progress, "Checking or installing " + clientName + "...");
@@ -398,6 +405,7 @@ internal static class Program
         startInfo.CreateNoWindow = true;
         using (Process process = Process.Start(startInfo))
         {
+            startInfo.Arguments = String.Empty;
             if (process == null)
             {
                 throw new InvalidOperationException("Windows could not start Winbox.exe.");
@@ -446,7 +454,7 @@ internal static class Program
         if (client == "putty" && !SupportsPuttyPasswordFile(executable))
         {
             WriteSshTestLog("event=automatic_password_unavailable client=putty");
-            throw new InvalidOperationException("This PuTTY version cannot receive the saved password without an interactive prompt. Run the current MikroTik Tools for GLPI setup installer to install its managed PuTTY version.");
+            throw new InvalidOperationException("This PuTTY version cannot receive the saved password through a private Windows pipe. Run the current MikroTik Tools for GLPI setup installer to install its managed PuTTY version.");
         }
         if (passwordHasLineBreak)
         {
@@ -456,64 +464,18 @@ internal static class Program
 
         ProcessStartInfo startInfo = new ProcessStartInfo();
         startInfo.FileName = executable;
-        string passwordFile = null;
-        startInfo.Arguments = "-ssh -P " + QuoteArgument(port) + " -l " + QuoteArgument(username) + " ";
-        if (client == "putty")
-        {
-            passwordFile = WriteTemporaryPasswordFile(password, "putty-password");
-            startInfo.Arguments += "-pwfile " + QuoteArgument(passwordFile) + " ";
-            bool fileMatchesSavedValue = File.Exists(passwordFile)
-                && String.Equals(File.ReadAllText(passwordFile, new UTF8Encoding(false)), password + Environment.NewLine, StringComparison.Ordinal);
-            WriteSshTestLog("event=auth_material_ready client=putty method=pwfile file_created=" + File.Exists(passwordFile)
-                + " file_matches_saved_value=" + fileMatchesSavedValue);
-        }
-        startInfo.Arguments += QuoteArgument(host);
+        startInfo.Arguments = "-ssh -P " + QuoteArgument(port) + " -l " + QuoteArgument(username)
+            + " " + PasswordPipeMarker + " " + QuoteArgument(host);
         startInfo.WorkingDirectory = Path.GetDirectoryName(executable);
         startInfo.UseShellExecute = false;
         startInfo.CreateNoWindow = false;
-        try
+        using (Process process = StartProcessWithPasswordPipe(startInfo, password))
         {
-            using (Process process = Process.Start(startInfo))
-            {
-                if (process == null)
-                {
-                    throw new InvalidOperationException("Windows could not start the SSH client.");
-                }
-                WriteSshTestLog("event=process_started client=" + client + " pid=" + process.Id + " auth_result=unknown");
-                if (passwordFile != null)
-                {
-                    try
-                    {
-                        bool inputIdle = process.WaitForInputIdle(5000);
-                        if (!inputIdle) Thread.Sleep(1000);
-                    }
-                    catch
-                    {
-                        Thread.Sleep(1000);
-                    }
-                    Thread.Sleep(500);
-                    WriteSshTestLog("event=pwfile_cleanup_started client=putty exists=" + File.Exists(passwordFile));
-                }
-            }
+            WriteSshTestLog("event=process_started client=" + client + " pid=" + process.Id + " auth_result=unknown");
         }
-        finally
-        {
-            if (passwordFile != null)
-            {
-                try
-                {
-                    File.Delete(passwordFile);
-                }
-                catch
-                {
-                    WriteLog("Could not remove the temporary PuTTY password file.");
-                }
-                WriteSshTestLog("event=pwfile_cleanup_finished client=putty exists=" + File.Exists(passwordFile));
-            }
-            password = null;
-        }
+        password = null;
 
-        WriteLog("PuTTY process started; the saved password was supplied through a temporary password file.");
+        WriteLog("PuTTY process started; the saved password was supplied through a per-launch Windows pipe, without a local password file.");
     }
 
     private static bool SupportsPuttyPasswordFile(string executable)
@@ -558,7 +520,6 @@ internal static class Program
             throw new InvalidOperationException("The saved SSH password contains a line break and cannot be tested automatically. Re-save it as a single-line password in GLPI.");
         }
 
-        string passwordFile = null;
         StringBuilder transcript = new StringBuilder();
         object transcriptLock = new object();
         DataReceivedEventHandler capture = delegate(object sender, DataReceivedEventArgs eventArgs)
@@ -575,11 +536,10 @@ internal static class Program
         bool timedOut = false;
         try
         {
-            passwordFile = WriteTemporaryPasswordFile(password, "ssh-diagnostic-password");
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = plinkExecutable;
             startInfo.Arguments = "-batch -noagent -v -ssh -P " + QuoteArgument(port)
-                + " -l " + QuoteArgument(username) + " -pwfile " + QuoteArgument(passwordFile)
+                + " -l " + QuoteArgument(username) + " " + PasswordPipeMarker
                 + " " + QuoteArgument(host) + " " + QuoteArgument("/system identity print");
             startInfo.WorkingDirectory = Path.GetDirectoryName(plinkExecutable);
             startInfo.UseShellExecute = false;
@@ -587,7 +547,7 @@ internal static class Program
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
 
-            using (Process process = Process.Start(startInfo))
+            using (Process process = StartProcessWithPasswordPipe(startInfo, password))
             {
                 if (process == null) throw new InvalidOperationException("Windows could not start the Plink diagnostic client.");
                 process.OutputDataReceived += capture;
@@ -624,11 +584,6 @@ internal static class Program
         }
         finally
         {
-            if (passwordFile != null)
-            {
-                try { if (File.Exists(passwordFile)) File.Delete(passwordFile); }
-                catch { WriteSshTestLog("event=diagnostic_password_file_cleanup_failed"); }
-            }
             password = null;
         }
     }
@@ -674,20 +629,94 @@ internal static class Program
             ProductName + " — SSH diagnostic", MessageBoxButtons.OK, icon);
     }
 
-    private static string WriteTemporaryPasswordFile(string password, string filePrefix)
+    private static Process StartProcessWithPasswordPipe(ProcessStartInfo startInfo, string password)
     {
-        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        if (String.IsNullOrEmpty(localAppData))
+        string pipeName = "WinboxGlpi-" + Guid.NewGuid().ToString("N");
+        string pipePath = @"\\.\pipe\" + pipeName;
+        PipeSecurity security = new PipeSecurity();
+        security.SetAccessRuleProtection(true, false);
+        SecurityIdentifier currentUser = WindowsIdentity.GetCurrent().User;
+        if (currentUser == null)
         {
-            throw new InvalidOperationException("Windows did not provide a private folder for the temporary PuTTY password file.");
+            throw new InvalidOperationException("Windows could not identify the signed-in user for private password delivery.");
         }
+        security.AddAccessRule(new PipeAccessRule(currentUser, PipeAccessRights.ReadWrite, AccessControlType.Allow));
+        security.AddAccessRule(new PipeAccessRule(
+            new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
+            PipeAccessRights.FullControl,
+            AccessControlType.Allow
+        ));
 
-        string directory = Path.Combine(localAppData, InstallFolderName);
-        Directory.CreateDirectory(directory);
-        string path = Path.Combine(directory, filePrefix + "-" + Guid.NewGuid().ToString("N") + ".tmp");
-        File.WriteAllText(path, password + Environment.NewLine, new UTF8Encoding(false));
-        File.SetAttributes(path, FileAttributes.Hidden);
-        return path;
+        using (NamedPipeServerStream pipe = new NamedPipeServerStream(
+            pipeName,
+            PipeDirection.Out,
+            1,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous,
+            4096,
+            4096,
+            security
+        ))
+        {
+            if (!startInfo.Arguments.Contains(PasswordPipeMarker))
+            {
+                throw new InvalidOperationException("The SSH process arguments are missing the private password-pipe marker.");
+            }
+            startInfo.Arguments = startInfo.Arguments.Replace(
+                PasswordPipeMarker,
+                "-pwfile " + QuoteArgument(pipePath)
+            );
+            IAsyncResult connectionWait = pipe.BeginWaitForConnection(null, null);
+            Process process = null;
+            try
+            {
+                process = Process.Start(startInfo);
+                if (process == null)
+                {
+                    throw new InvalidOperationException("Windows could not start the SSH client.");
+                }
+                // Do not keep the password in the parent ProcessStartInfo longer than needed.
+                startInfo.Arguments = String.Empty;
+                if (!connectionWait.AsyncWaitHandle.WaitOne(10000))
+                {
+                    throw new TimeoutException("The SSH client did not read its password from the private Windows pipe.");
+                }
+                pipe.EndWaitForConnection(connectionWait);
+                uint pipeClientProcessId;
+                if (!GetNamedPipeClientProcessId(pipe.SafePipeHandle.DangerousGetHandle(), out pipeClientProcessId)
+                    || pipeClientProcessId != (uint)process.Id)
+                {
+                    throw new UnauthorizedAccessException("A process other than the selected SSH client connected to the private password pipe.");
+                }
+
+                byte[] passwordBytes = Encoding.UTF8.GetBytes(password + Environment.NewLine);
+                try
+                {
+                    pipe.Write(passwordBytes, 0, passwordBytes.Length);
+                    pipe.Flush();
+                }
+                finally
+                {
+                    Array.Clear(passwordBytes, 0, passwordBytes.Length);
+                }
+
+                return process;
+            }
+            catch
+            {
+                startInfo.Arguments = String.Empty;
+                if (process != null)
+                {
+                    try { if (!process.HasExited) process.Kill(); } catch { }
+                    process.Dispose();
+                }
+                throw;
+            }
+            finally
+            {
+                if (connectionWait != null) connectionWait.AsyncWaitHandle.Close();
+            }
+        }
     }
 
     private static void ReportLaunchResult(string token, string status, string client)

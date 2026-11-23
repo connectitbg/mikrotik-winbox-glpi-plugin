@@ -19,12 +19,14 @@ final class SensitiveRestoreDiagnosticController extends AbstractController
     #[Route('/SensitiveRestoreDiagnostic', name: 'winbox_sensitive_restore_diagnostic', methods: ['GET', 'POST'])]
     public function __invoke(Request $request): Response
     {
-        Session::checkRight('config', UPDATE);
         global $DB;
 
         $id = $request->isMethod('POST')
             ? $request->request->getInt('id')
             : $request->query->getInt('id');
+        if (!Access::canRunDiagnostics($id) || !Access::canUseBackupRestore($id)) {
+            throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
+        }
         $equipment = self::getEditableEquipment($id);
         $credentials = Access::credentials($DB, $id);
         if (!$credentials) {

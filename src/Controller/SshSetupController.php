@@ -17,14 +17,13 @@ final class SshSetupController extends AbstractController
     #[Route('/SshSetup', name: 'winbox_ssh_setup', methods: ['GET', 'POST'])]
     public function __invoke(Request $request): Response
     {
-        Session::checkRight('config', UPDATE);
         global $DB, $CFG_GLPI;
 
         $id = $request->isMethod('POST')
             ? $request->request->getInt('id')
             : $request->query->getInt('id');
         $equipment = new NetworkEquipment();
-        if ($id < 1 || !$equipment->getFromDB($id) || !$equipment->can($id, UPDATE)) {
+        if ($id < 1 || !$equipment->getFromDB($id) || !Access::canRunDiagnostics($id)) {
             throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
         }
 

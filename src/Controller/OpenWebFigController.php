@@ -18,7 +18,7 @@ final class OpenWebFigController extends AbstractController
     {
         $id = $request->query->getInt('id');
         $equipment = new NetworkEquipment();
-        if ($id < 1 || !$equipment->getFromDB($id) || !$equipment->can($id, READ)) {
+        if ($id < 1 || !$equipment->getFromDB($id) || !Access::canLaunchEquipment($id)) {
             throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
         }
 

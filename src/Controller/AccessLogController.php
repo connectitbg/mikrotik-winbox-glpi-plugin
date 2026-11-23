@@ -16,10 +16,8 @@ final class AccessLogController extends AbstractController
     #[Route('/AccessLog', name: 'winbox_device_access_log', methods: ['GET'])]
     public function __invoke(Request $request): Response
     {
-        Session::checkRight('system_logs', READ);
-
         $id = $request->query->getInt('id');
-        if (!Access::canReadEquipment($id)) {
+        if (!Access::canViewAccessLog($id)) {
             throw new \Glpi\Exception\Http\NotFoundHttpException();
         }
 

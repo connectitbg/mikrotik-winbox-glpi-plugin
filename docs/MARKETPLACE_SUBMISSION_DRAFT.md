@@ -2,21 +2,24 @@
 
 ## Status
 
-The initial catalog submission and follow-up were sent to Teclib in November 2026. Teclib's security review is tracked at [GitHub issue #1](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/1). Candidate 1.0.2 addresses the review findings and is being tested on GLPI 12.0.2. Do not send the updated catalog XML or ask Teclib to resume review until the candidate is tested, published as a matching GitHub release, and its download URL works. Neither catalog publication nor Marketplace approval has been confirmed.
+The initial catalog submission and a stable 1.0.0 update were sent to Teclib in November 2026. Teclib's pre-publication review is tracked in [GitHub issue #1](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/1). Version 1.0.2 incorporates the security and documentation corrections recorded in the release notes. The project owner has confirmed the profile matrix and current device-page controls on the GLPI 12.0.2 test instance.
 
-The follow-up asks Teclib to update the existing beta submission to stable 1.0.0 (or advise whether a new submission is needed), confirm the catalog review status, and explain any remaining requirements for catalog acceptance and separate Marketplace review.
+The 1.0.2 release links and updated XML should be sent in the existing Teclib email thread. Catalog listing and separate in-app Marketplace review remain subject to Teclib's response; a GitHub release does not grant either approval.
 
-## Current submission metadata
+## Submission metadata
 
-- Display name: MikroTik Tools for GLPI (formerly Winbox - GLPI)
+- Display name: MikroTik Tools for GLPI
 - Technical key: `winbox`
 - Publisher: Connect IT — <https://connectit.bg>
-- Version: 1.0.2 (security-review candidate; test pass completed, not yet published)
-- Catalog state: stable in `winbox.xml`; publication pending Teclib confirmation
-- Tested on: GLPI 11.0.9 and GLPI 12.0.2; declared compatibility: GLPI 11.x and 12.x. The current 1.0.2 candidate was deployed and linted on the GLPI 12.0.2 test server.
+- Version: 1.0.2 (stable)
+- Catalog state in XML: stable; Teclib publication/update confirmation pending
+- Compatibility declared: GLPI `^11.0 || ^12.0`
+- Validation: GLPI 12.0.2 test instance for the current review cycle; earlier stable release exercised on GLPI 11.0.9
 - Source: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin>
 - License: GPL-3.0-or-later
-- Release archive: publish the matching 1.0.2 asset only after test verification
+- Release tag: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/tag/v1.0.2>
+- Release archive: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/releases/download/v1.0.2/glpi-winbox-plugin-1.0.2.zip>
+- Versioned catalog XML: <https://raw.githubusercontent.com/connectitbg/mikrotik-winbox-glpi-plugin/v1.0.2/winbox.xml>
 - Issue reports: <https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues>
 
 ## Short description
@@ -25,17 +28,29 @@ Manage MikroTik access, diagnostics, and configuration backups from GLPI network
 
 ## Long description
 
-MikroTik Tools for GLPI adds per-device access actions for WinBox, PuTTY, and WebFig. Its per-user Windows installer registers the browser protocol handlers and installs missing clients. The plugin provides GLPI access logging, SSH host fingerprint verification, read-only RouterOS policy and service diagnostics, masked `.rsc` export/import through REST over HTTPS, and sensitive text backup/restore through SSH/SFTP. WebFig prefers WWW-SSL and falls back to WWW. Actions are governed by GLPI permissions and RouterOS policies. KiTTY integration was removed before publication because automatic login requires exposing the saved password as a process command-line argument.
+MikroTik Tools for GLPI adds per-device WinBox, PuTTY, and WebFig actions. Its per-user Windows installer registers the browser handlers and installs missing clients. The plugin provides access logs, SSH fingerprint verification, read-only RouterOS policy/service diagnostics, masked `.rsc` export/import through REST over HTTPS, and sensitive text backup/restore through SSH/SFTP. WebFig prefers WWW-SSL and falls back to WWW.
 
-Version 1.0.2 addresses the Teclib review by encrypting stored router passwords with the GLPI security key, enforcing permissions on the server-side launch endpoints, requiring CSRF-protected POST requests for token creation, comparing SSH fingerprints before pinning, and using GLPI database migration helpers. The candidate retains the GLPI 11.x and 12.x compatibility range and has passed the current test-server checks on GLPI 12.0.2. An authenticated browser check of the GET rejection remains pending; no router was contacted. The source is licensed under GPL-3.0-or-later.
+Administrators can delegate access buttons, access-log visibility, connection-field viewing/editing, diagnostics, and backup/restore by existing GLPI profile. Admin and Super-Admin receive all six permissions by default; Supervisor and Technician receive access buttons and access-log visibility; other profiles start denied. Device-level GLPI rights remain required. Router passwords are encrypted at rest with the GLPI security key; PuTTY/Plink receive the saved password through an access-restricted per-launch Windows named pipe. KiTTY integration was removed because its automatic password option exposes the password in process arguments.
 
-## Publication sequence
+WinBox's native automatic-login interface requires the password as a process argument. Local processes or administrators may inspect it, and WinBox's **Keep Password** or **Autosave session** settings may retain session data. The plugin does not control those native settings. This limitation is disclosed for Teclib review; automatic login through a local native client cannot guarantee zero workstation exposure.
 
-1. **Complete:** Publish the source, sanitized interface screenshot, versioned release archive, and catalog XML on GitHub.
-2. **Complete:** Sent Teclib the stable 1.0.0 release links and XML; requested an update to the existing beta submission.
-3. **Complete:** Deploy the 1.0.2 candidate to GLPI 12.0.2, lint all plugin PHP files, clear GLPI cache, verify the installation page response, and validate the gettext catalog. No router was contacted or modified.
-4. **Pending:** Publish the reviewed 1.0.2 source and release asset on GitHub; confirm the versioned `download_url` resolves.
-5. **Pending:** Send Teclib the matching XML and release link, request that the existing security review be updated, and address any further findings.
-6. **Pending:** Follow Teclib's instructions for separate Marketplace review, including any eligibility or partner requirements.
+## Review corrections in 1.0.2
 
-Catalog publication and Marketplace approval are distinct decisions. Update this document only when Teclib confirms each status.
+- Encrypt saved router credentials with GLPI's security key and migrate existing plaintext rows.
+- Separate launch permission from connection-field visibility and editing with a profile-level matrix enforced by server-side access checks.
+- Use CSRF-protected POST launch requests, single-use 15-second handoff codes, and live countdown pages.
+- Confirm the exact scanned SSH fingerprint set before pinning it.
+- Use GLPI migration helpers/query builder and the configured GLPI base URL.
+- Deliver PuTTY/Plink passwords through a per-launch Windows pipe without a local password file; remove KiTTY integration because its password flag exposes credentials in process arguments.
+- Document the unavoidable native WinBox password-argument and session-save limitation.
+
+## Publication and review sequence
+
+1. **Complete:** Publish the 1.0.2 source, release archive, changelog, release notes, and updated English catalog XML on GitHub.
+2. **Complete:** Deploy the 1.0.2 candidate to GLPI 12.0.2, lint all 30 plugin PHP files, clear GLPI cache, confirm the installer/countdown routes, and verify the countdown asset. No router was contacted or changed.
+3. **Complete:** Project owner confirmed the profile matrix, countdown, and device-level installer link placement on the test instance.
+4. **In progress:** Reply in the existing Teclib email thread with the matching 1.0.2 release links and updated catalog XML; ask Teclib to update the existing entry and continue its review.
+5. **Pending:** Teclib confirmation of the catalog update and any further review findings.
+6. **Pending:** Follow Teclib's requirements for separate in-app Marketplace review, including any eligibility or partner requirements.
+
+The authenticated HTTP-method check for GET requests to both launch-creation endpoints remains a follow-up verification item. The routes declare POST as the only allowed method. Keep this distinction visible in any further review correspondence.

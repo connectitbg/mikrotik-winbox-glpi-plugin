@@ -19,7 +19,6 @@ final class SensitiveExportController extends AbstractController
     #[Route('/SensitiveExport', name: 'winbox_sensitive_export', methods: ['GET', 'POST'])]
     public function __invoke(Request $request): Response
     {
-        Session::checkRight('config', UPDATE);
         global $DB;
 
         $id = $request->isMethod('POST')
@@ -103,7 +102,7 @@ final class SensitiveExportController extends AbstractController
     private static function getEditableEquipment(int $id): NetworkEquipment
     {
         $equipment = new NetworkEquipment();
-        if ($id < 1 || !$equipment->getFromDB($id) || !$equipment->can($id, UPDATE)) {
+        if ($id < 1 || !$equipment->getFromDB($id) || !Access::canUseBackupRestore($id)) {
             throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
         }
         return $equipment;

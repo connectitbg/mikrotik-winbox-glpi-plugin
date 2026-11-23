@@ -18,7 +18,6 @@ final class ConfigExportController extends AbstractController
     #[Route('/ConfigExport', name: 'winbox_config_export', methods: ['GET'])]
     public function __invoke(Request $request): Response
     {
-        Session::checkRight('config', UPDATE);
         global $DB;
 
         $id = $request->query->getInt('id');
@@ -61,7 +60,7 @@ final class ConfigExportController extends AbstractController
     private static function getEditableEquipment(int $id): NetworkEquipment
     {
         $equipment = new NetworkEquipment();
-        if ($id < 1 || !$equipment->getFromDB($id) || !$equipment->can($id, UPDATE)) {
+        if ($id < 1 || !$equipment->getFromDB($id) || !Access::canUseBackupRestore($id)) {
             throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException();
         }
         return $equipment;

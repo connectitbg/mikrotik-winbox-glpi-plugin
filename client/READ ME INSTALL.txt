@@ -9,14 +9,14 @@ INSTALL
 
 CONNECT WITH WINBOX
 1. In GLPI, open a network equipment record and choose the Winbox tab.
-2. Click Open in Winbox, then click Start Winbox on the handoff page within 90 seconds.
+2. Click Open in Winbox, then click Start Winbox before the 15-second countdown expires.
 3. Confirm the browser prompt if it asks to open an external application.
 
 CONNECT WITH PuTTY
 1. In the device's Winbox tab, choose Open SSH in PuTTY.
-2. Click the matching start button on the handoff page within 5 minutes. SSH handoff codes are single-use.
-3. The selected client receives the configured host, SSH port, username, and saved password. Users do not enter credentials at launch.
-4. PuTTY uses a short-lived password file. KiTTY integration was removed because its automatic password option exposes the saved password in the command line. The installer leaves separately installed KiTTY applications alone.
+2. Click the matching start button before the 15-second countdown expires. SSH handoff codes are single-use.
+3. The selected client receives the configured host, SSH port, username, and saved password. Users do not enter credentials at launch. PuTTY receives the password through a per-launch, access-restricted Windows named pipe; the handler does not write a local password file.
+4. WinBox requires the password as a process argument for automatic login. A local process or administrator may inspect it. WinBox's native Keep Password and Autosave session settings may retain session data on that workstation. The plugin does not change these settings; their behavior is an open item for Teclib review. The plugin cannot guarantee zero workstation exposure or storage while using native-client auto-login. KiTTY integration was removed because its automatic password option also exposes the saved password in the command line.
 5. If RouterOS rejects authentication, verify the saved device credentials and RouterOS SSH policy. The handler cannot bypass an authentication rejection.
 
 DIAGNOSTICS AND LOGS
@@ -27,5 +27,6 @@ DIAGNOSTICS AND LOGS
 
 SECURITY
 - Use HTTPS for GLPI when exchanging production credentials. The test GLPI server uses HTTP and is for test credentials only.
+- The handler does not persist router passwords to files, registry values, or Windows Credential Manager. WinBox is a separate application; this setup does not modify its Keep Password or Autosave session settings.
 - The installer is unsigned. Download it only from a GLPI server you trust.
 - Manual fallback files are available on the GLPI setup page, but they do not install SSH clients.

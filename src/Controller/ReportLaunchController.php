@@ -39,7 +39,7 @@ final class ReportLaunchController extends AbstractController
             !$token_row
             || empty($token_row['redeemed_at'])
             || !empty($token_row['reported_at'])
-            || strtotime($token_row['expires_at']) < time()
+            || strtotime($token_row['expires_at']) <= time()
         ) {
             return new JsonResponse(['error' => 'Launch report is expired or already recorded'], 410, ['Cache-Control' => 'no-store']);
         }
@@ -55,7 +55,7 @@ final class ReportLaunchController extends AbstractController
                 'token_hash' => $token_hash,
                 'launch_type' => 'winbox',
                 'reported_at' => null,
-                'expires_at' => ['>=', date('Y-m-d H:i:s')],
+                'expires_at' => ['>', date('Y-m-d H:i:s')],
             ]
         );
         if ($DB->affectedRows() !== 1) {

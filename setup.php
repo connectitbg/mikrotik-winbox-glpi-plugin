@@ -136,5 +136,7 @@ function plugin_winbox_uninstall(): bool
     foreach (['glpi_plugin_winbox_tokens', 'glpi_plugin_winbox_credentials'] as $table) {
         if ($DB->tableExists($table)) $DB->dropTable($table);
     }
+    $config = new Config();
+    $config->deleteByCriteria(['context' => 'plugin:winbox']);
     return true;
 }

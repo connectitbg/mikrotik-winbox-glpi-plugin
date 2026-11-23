@@ -33,7 +33,7 @@ final class RedeemController extends AbstractController
             $token_row = $row;
             break;
         }
-        if (!$token_row || strtotime($token_row['expires_at']) < time()) {
+        if (!$token_row || strtotime($token_row['expires_at']) <= time()) {
             return new JsonResponse(['error' => 'Launch code expired or already used'], 410, ['Cache-Control' => 'no-store']);
         }
 
@@ -41,7 +41,7 @@ final class RedeemController extends AbstractController
         $DB->update(
             'glpi_plugin_winbox_tokens',
             ['redeemed_at' => date('Y-m-d H:i:s')],
-            ['token_hash' => $hash, 'launch_type' => 'winbox', 'redeemed_at' => null, 'expires_at' => ['>=', date('Y-m-d H:i:s')]]
+            ['token_hash' => $hash, 'launch_type' => 'winbox', 'redeemed_at' => null, 'expires_at' => ['>', date('Y-m-d H:i:s')]]
         );
         if ($DB->affectedRows() !== 1) {
             return new JsonResponse(['error' => 'Launch code expired or already used'], 410, ['Cache-Control' => 'no-store']);

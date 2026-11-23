@@ -10,8 +10,77 @@ msgstr ""
 msgid "This is an intermediate step. Click below to send the one-time code to the Windows handler."
 msgstr "Това е междинна стъпка. Натиснете бутона по-долу, за да предадете еднократния код на Windows обработчика."
 
-msgid "The code expires after 90 seconds and can only be used once."
-msgstr "Кодът изтича след 90 секунди и може да се използва само веднъж."
+msgid "The code expires after 15 seconds and can only be used once."
+msgstr "Кодът изтича след 15 секунди и може да се използва само веднъж."
+
+msgid "Time remaining: %d seconds."
+msgstr "Оставащо време: %d секунди."
+
+msgid "Launch code expired. Return to the device and create a new request."
+msgstr "Кодът за стартиране изтече. Върнете се към устройството и създайте нова заявка."
+
+msgid "Client setup files and instructions"
+msgstr "Инсталационни файлове и инструкции за клиента"
 
 msgid "Start Winbox"
 msgstr "Стартирай Winbox"
+
+msgid "You do not have permission to launch clients for this device."
+msgstr "Нямате право да стартирате клиенти за това устройство."
+
+msgid "The saved password could not be decrypted. Check that this GLPI instance has its original security key."
+msgstr "Запазената парола не може да бъде декриптирана. Проверете дали този GLPI екземпляр разполага с оригиналния ключ за сигурност."
+
+msgid "Router passwords are encrypted in GLPI. The launcher does not save them to client files, registry values, or Windows Credential Manager. PuTTY uses a per-launch Windows pipe. WinBox receives the password in its process arguments for automatic login and may save it if its own Keep Password option is enabled; disable that option. Local processes or administrators may inspect WinBox process arguments. Keep GLPI on HTTPS and grant launch rights only to trusted staff. SSH uses username/password by default; optional key mode tries an OpenSSH identity for the GLPI web service account, then falls back to the password. Use an unencrypted, permission-protected identity or an unlocked SSH agent. The router SSH fingerprint check verifies server identity, not the login method. Masked .rsc actions require RouterOS REST over verified HTTPS. SSH text backup requires SSH/SFTP reachable from GLPI and a pinned router fingerprint; export needs the RouterOS sensitive policy. Restore needs the read, write, and ftp policies. Sensitive values in the text backup are plaintext. Import dry-run requires RouterOS v7.16 or later."
+msgstr "Паролите на рутерите са криптирани в GLPI. Обработчикът не ги записва във файлове на клиента, в регистъра или в Windows Credential Manager. PuTTY използва Windows pipe, създаден само за текущото стартиране. За автоматичен вход WinBox получава паролата като аргумент на процеса и може да я запази, ако е включено Keep Password; изключете тази настройка. Локални процеси или администратори могат да прочетат аргументите на WinBox. Използвайте GLPI само през HTTPS и предоставяйте право за стартиране само на доверени служители. По подразбиране SSH използва потребител и парола; незадължителният режим с ключ първо опитва OpenSSH идентичност за системния акаунт на GLPI и след това преминава към паролата. Използвайте нешифрован ключ със защитени права за достъп или отключен SSH агент. Проверката на SSH fingerprint удостоверява сървъра, но не и метода за вход. Маскираният .rsc изисква RouterOS REST през проверен HTTPS. Текстовият SSH архив изисква SSH/SFTP достъп от GLPI и фиксиран fingerprint на рутера; за експортиране е нужна RouterOS sensitive политика. Възстановяването изисква политики read, write и ftp. Чувствителните стойности в текстовия архив са в четим вид. Dry-run на импорта изисква RouterOS 7.16 или по-нова версия."
+
+msgid "Delegated profile permissions"
+msgstr "Делегирани права по профили"
+
+msgid "Choose which existing GLPI profiles can use access actions, view or edit saved connection fields, run diagnostics, use backup/restore actions, and view the device access log. Device-level GLPI read or update rights are still required for each action. Editing credentials automatically includes permission to view them."
+msgstr "Изберете кои съществуващи GLPI профили могат да използват бутоните за достъп, да преглеждат или редактират запазените полета за връзка, да стартират диагностика, да използват архивиране и възстановяване и да виждат лога за достъп до устройството. За всяко действие продължават да се изискват съответните права за четене или актуализация на мрежовото устройство в GLPI. Правото за редакция на данните автоматично включва право за преглед."
+
+msgid "Router passwords remain encrypted in the GLPI database. The plugin does not save them to client files or the Windows credential store. PuTTY receives a password through a per-launch, access-restricted Windows pipe. WinBox requires the password as a process argument for automatic login; local processes or administrators may inspect it, and WinBox may save it when Keep Password is enabled. Disable Keep Password in WinBox. A guarantee that credentials never reach a workstation requires server-side access instead of native-client auto-login. Viewing fields shows the password in clear text; backup/restore may change router configuration."
+msgstr "Паролите на рутерите остават криптирани в базата данни на GLPI. Плъгинът не ги записва във файлове на клиента или в Windows Credential Manager. PuTTY получава паролата през защитен named pipe, създаден само за текущото стартиране. За автоматичен вход WinBox изисква паролата като аргумент на процеса; локални процеси или администратори могат да я прочетат, а WinBox може да я запази, ако е включено Keep Password. Изключете Keep Password в WinBox. Гаранция, че паролите изобщо не достигат до работната станция, изисква достъп през сървъра вместо автоматичен вход в native клиент. Прегледът на полетата показва паролата в четим вид; архивирането и възстановяването могат да променят конфигурацията на рутера."
+
+msgid "GLPI profile"
+msgstr "GLPI профил"
+
+msgid "Access buttons"
+msgstr "Бутони за достъп"
+
+msgid "View connection fields"
+msgstr "Преглед на полетата за връзка"
+
+msgid "Edit connection fields"
+msgstr "Редакция на полетата за връзка"
+
+msgid "Backup / restore"
+msgstr "Архивиране / възстановяване"
+
+msgid "Diagnostics"
+msgstr "Диагностика"
+
+msgid "Access log"
+msgstr "Лог за достъп"
+
+msgid "Initial defaults: Admin and Super-Admin can use every action. Supervisor and Technician can use access buttons and view access logs. All other profiles start with every permission disabled. GLPI device-level rights still apply."
+msgstr "Първоначални права: Admin и Super-Admin могат да използват всички действия. Supervisor и Technician могат да използват бутоните за достъп и да преглеждат логовете. Всички останали профили започват с изключени права. Правата на GLPI за конкретното устройство продължават да важат."
+
+msgid "The one-time code expires in 15 seconds. GLPI supplies the saved password to PuTTY through a per-launch, access-restricted Windows pipe, without writing a local password file. The first connection may ask you to confirm the router host key."
+msgstr "Еднократният код изтича след 15 секунди. GLPI подава запазената парола на PuTTY през защитен Windows pipe, създаден само за текущото стартиране, без да записва локален файл с паролата. При първата връзка може да се наложи да потвърдите host key на рутера."
+
+msgid "Winbox profile permissions were saved."
+msgstr "Правата за профилите на Winbox бяха запазени."
+
+msgid "Unable to save Winbox profile permissions."
+msgstr "Правата за профилите на Winbox не можаха да бъдат запазени."
+
+msgid "Connection fields are hidden for your profile. Contact a GLPI administrator to grant view or edit permission."
+msgstr "Полетата за връзка са скрити за вашия профил. Свържете се с GLPI администратор, за да ви предостави право за преглед или редакция."
+
+msgid "Router passwords remain encrypted in the GLPI database. The plugin does not save them to client files or the Windows credential store. PuTTY receives a password through a per-launch, access-restricted Windows pipe. WinBox requires the password as a process argument for automatic login; local processes or administrators may inspect it, and WinBox native settings Keep Password or Autosave session may retain session data on that workstation. The plugin does not change these WinBox settings; their behavior is an open item for Teclib review. Native-client auto-login cannot guarantee that credentials never reach or are stored on a workstation. Viewing fields shows the password in clear text; backup/restore may change router configuration."
+msgstr "Паролите на рутерите остават криптирани в базата данни на GLPI. Плъгинът не ги записва във файлове на клиента или в Windows Credential Manager. PuTTY получава паролата през защитен Windows pipe, създаден само за текущото стартиране. За автоматичен вход WinBox изисква паролата като аргумент на процеса; локални процеси или администратори могат да я прочетат, а настройките Keep Password и Autosave session на WinBox могат да запазят данни за сесията на работната станция. Плъгинът не променя тези настройки; поведението им е отбелязано за преглед от Teclib. Автоматичният вход в локален клиент не гарантира, че паролите никога не достигат или се записват на работната станция. Прегледът на полетата показва паролата в четим вид; архивирането и възстановяването могат да променят конфигурацията на рутера."
+
+msgid "Router passwords are encrypted in GLPI. The launcher does not save them to client files, registry values, or Windows Credential Manager. PuTTY uses a per-launch Windows pipe. WinBox receives the password in its process arguments for automatic login; local processes or administrators may inspect it, and WinBox native settings Keep Password or Autosave session may retain session data on that workstation. The plugin does not change these WinBox settings; their behavior is an open item for Teclib review. Native-client auto-login cannot guarantee that credentials never reach or are stored on a workstation. Keep GLPI on HTTPS and grant launch rights only to trusted staff. SSH uses username/password by default; optional key mode tries an OpenSSH identity for the GLPI web service account, then falls back to the password. Use an unencrypted, permission-protected identity or an unlocked SSH agent. The router SSH fingerprint check verifies server identity, not the login method. Masked .rsc actions require RouterOS REST over verified HTTPS. SSH text backup requires SSH/SFTP reachable from GLPI and a pinned router fingerprint; export needs the RouterOS sensitive policy. Restore needs the read, write, and ftp policies. Sensitive values in the text backup are plaintext. Import dry-run requires RouterOS v7.16 or later."
+msgstr "Паролите на рутерите са криптирани в GLPI. Обработчикът не ги записва във файлове на клиента, в регистъра или в Windows Credential Manager. PuTTY използва Windows pipe, създаден само за текущото стартиране. За автоматичен вход WinBox получава паролата като аргумент на процеса; локални процеси или администратори могат да я прочетат, а настройките Keep Password и Autosave session на WinBox могат да запазят данни за сесията на работната станция. Плъгинът не променя тези настройки; поведението им е отбелязано за преглед от Teclib. Автоматичният вход в локален клиент не гарантира, че паролите никога не достигат или се записват на работната станция. Използвайте GLPI само през HTTPS и предоставяйте права за стартиране само на доверени служители. По подразбиране SSH използва потребител и парола; незадължителният режим с ключ първо опитва OpenSSH идентичност за системния акаунт на GLPI и след това преминава към паролата. Използвайте нешифрован ключ със защитени права за достъп или отключен SSH агент. Проверката на SSH fingerprint удостоверява сървъра, но не и метода за вход. Маскираните .rsc действия изискват RouterOS REST през проверен HTTPS. Текстовият SSH архив изисква SSH/SFTP достъп от GLPI и фиксиран fingerprint на рутера; за експортиране е нужна RouterOS sensitive политика. Възстановяването изисква политики read, write и ftp. Чувствителните стойности в текстовия архив са в четим вид. Dry-run на импорта изисква RouterOS 7.16 или по-нова версия."
