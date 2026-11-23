@@ -2,9 +2,9 @@
 
 ## Status
 
-The initial catalog submission and a stable 1.0.0 update were sent to Teclib in November 2026. Teclib's pre-publication review is tracked in [GitHub issue #1](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/1). Version 1.0.2 incorporates the security and documentation corrections recorded in the release notes. The project owner has confirmed the profile matrix and current device-page controls on the GLPI 12.0.2 test instance.
+The initial catalog submission, stable 1.0.0 update, and 1.0.2 release follow-up were sent to Teclib in November 2026. The latest reply was sent on 23 November 2026 in the existing **Winbox - GLPI beta: catalog review and Marketplace eligibility** thread. Teclib's pre-publication review is tracked in [GitHub issue #1](https://github.com/connectitbg/mikrotik-winbox-glpi-plugin/issues/1). Version 1.0.2 incorporates the security and documentation corrections recorded in the release notes. The project owner has confirmed the profile matrix and current device-page controls on the GLPI 12.0.2 test instance.
 
-The 1.0.2 release links and updated XML should be sent in the existing Teclib email thread. Catalog listing and separate in-app Marketplace review remain subject to Teclib's response; a GitHub release does not grant either approval.
+The 1.0.2 release links and updated XML have been sent in the existing Teclib email thread. Catalog listing and separate in-app Marketplace review remain subject to Teclib's response; a GitHub release does not grant either approval.
 
 ## Submission metadata
 
@@ -49,7 +49,7 @@ WinBox's native automatic-login interface requires the password as a process arg
 1. **Complete:** Publish the 1.0.2 source, release archive, changelog, release notes, and updated English catalog XML on GitHub.
 2. **Complete:** Deploy the 1.0.2 candidate to GLPI 12.0.2, lint all 30 plugin PHP files, clear GLPI cache, confirm the installer/countdown routes, and verify the countdown asset. No router was contacted or changed.
 3. **Complete:** Project owner confirmed the profile matrix, countdown, and device-level installer link placement on the test instance.
-4. **In progress:** Reply in the existing Teclib email thread with the matching 1.0.2 release links and updated catalog XML; ask Teclib to update the existing entry and continue its review.
+4. **Complete:** Replied in the existing Teclib email thread on 23 November 2026 with the matching 1.0.2 release links and updated catalog XML; requested an update to the existing entry and continuation of the review.
 5. **Pending:** Teclib confirmation of the catalog update and any further review findings.
 6. **Pending:** Follow Teclib's requirements for separate in-app Marketplace review, including any eligibility or partner requirements.
 
